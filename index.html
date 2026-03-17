@@ -85,6 +85,8 @@ body{
 #panel-flashcards.active{display:flex}
 #panel-reader{display:none;flex-direction:column}
 #panel-reader.active{display:flex}
+#panel-grammar{display:none;flex-direction:column}
+#panel-grammar.active{display:flex}
 
 /* ═══════════════════════════
    BOTTOM NAV
@@ -900,7 +902,7 @@ mark{background:rgba(255,200,0,.4);padding:0 1px;border-radius:3px;color:inherit
 </div>
 
 <!-- ═══ FLASHCARDS ═══ -->
-<div class="tab-panel active" id="panel-flashcards">
+<div class="tab-panel" id="panel-flashcards">
 
   <div class="fc-topbar">
     <div class="seg">
@@ -934,7 +936,7 @@ mark{background:rgba(255,200,0,.4);padding:0 1px;border-radius:3px;color:inherit
 
   <!-- FLIP -->
   <div class="fc-main" id="fcFlipArea">
-    <div class="fc-ctr" id="fcFlipCtr">Karte <strong id="fcFlipIdx">1</strong> von <strong id="fcFlipTotal">0</strong></div>
+    <div class="fc-ctr" id="fcFlipCtr">Karte <strong id="fcFlipIdx">1</strong> von <strong id="fcFlipTotal">0</strong> · <span id="fcFlipRem" style="color:var(--blue-d)"></span></div>
     <div class="fc-swipe">
       <button class="fc-side wrong hidden" id="fcBtnWrong" onclick="fcAnswer(false)">
         <span class="fc-side-ico">✗</span>
@@ -945,10 +947,7 @@ mark{background:rgba(255,200,0,.4);padding:0 1px;border-radius:3px;color:inherit
           <div class="fc-face front" id="fcFaceF">
             <div class="fc-face-top">
               <span class="fc-cat-tag" id="fcCatF"></span>
-              <div style="display:flex;gap:6px;align-items:center">
-                <span class="fc-hist" id="fcHistF"></span>
-                <button class="tts-btn" id="fcTtsBtn" onclick="speakCard(event)">🔊</button>
-              </div>
+              <span class="fc-hist" id="fcHistF"></span>
             </div>
             <div class="fc-word" id="fcFront"></div>
             <span class="fc-hint" id="fcHintF">Antippen zum Aufdecken</span>
@@ -1014,7 +1013,6 @@ mark{background:rgba(255,200,0,.4);padding:0 1px;border-radius:3px;color:inherit
     <div class="fc-ctr" id="fcTypeCtr" style="margin-bottom:14px">Karte <strong id="fcTypeIdx">1</strong> von <strong id="fcTypeTotal">0</strong></div>
     <div style="width:100%;max-width:560px;background:var(--white);border-radius:20px;padding:32px 20px 20px;text-align:center;position:relative;box-shadow:var(--shadow-lg);margin-bottom:14px">
       <span style="position:absolute;top:12px;left:14px;font-size:11px;font-weight:800;padding:3px 9px;border-radius:10px;background:var(--blue-bg);color:var(--blue-d)" id="fcTypeCat"></span>
-      <button class="tts-btn" id="fcTypeTtsBtn" onclick="speakTypeCard(event)" style="position:absolute;top:10px;right:14px">🔊</button>
       <div style="font-size:clamp(28px,6vw,44px);font-weight:900;color:var(--text);line-height:1.2;margin-bottom:8px" id="fcTypeQuestion"></div>
       <div style="font-size:12px;font-weight:700;color:var(--text-muted)" id="fcTypePrompt">WIE HEISST DAS AUF PORTUGIESISCH?</div>
     </div>
@@ -1657,15 +1655,7 @@ const TEXTS = [
  g:[["die Vorlesung","a aula magistral"],["der Hörsaal","o anfiteatro"],["der Abschied","a despedida"],["versagen","falhar"],["das Scheitern","o fracasso"],["die Stille","o silêncio"]]}
 ];
 
-// ════════════════════════════════════════════
-// BUILD CARDS + WORD MAP
-// ════════════════════════════════════════════
-const ALL_CARDS = [];
-for(const [k,cat] of Object.entries(CATS)){
-  cat.words.forEach(([de,pt],i)=>ALL_CARDS.push({id:`${k}_${i}`,de,pt,cat:k,catLabel:cat.label}));
-}
-const WORD_MAP = {};
-ALL_CARDS.forEach(c=>{WORD_MAP[c.de.toLowerCase()]=c;});
+// (CATS/ALL_CARDS/WORD_MAP defined above)
 
 // ════════════════════════════════════════════
 // PERSISTENCE + SM-2 SRS
@@ -1767,47 +1757,12 @@ function switchTab(tab){
   const dt=document.getElementById('dtab-'+tab);if(dt)dt.classList.add('active');
   if(tab==='home')refreshHome();
   if(tab==='grammar')renderGrammar();
+  updateLayout();
 }
 
 // ════════════════════════════════════════════
 // TTS — Text-to-Speech
 // ════════════════════════════════════════════
-let ttsVoice=null;
-function initTTS(){
-  const load=()=>{
-    const voices=speechSynthesis.getVoices();
-    ttsVoice=voices.find(v=>v.lang.startsWith('de'))
-      ||voices.find(v=>v.lang==='de-DE')
-      ||voices.find(v=>v.lang.includes('de'))
-      ||null;
-  };
-  load();
-  speechSynthesis.onvoiceschanged=load;
-}
-function speak(text,btn){
-  if(!speechSynthesis)return;
-  speechSynthesis.cancel();
-  const utter=new SpeechSynthesisUtterance(text);
-  utter.lang='de-DE';utter.rate=0.9;utter.pitch=1;
-  if(ttsVoice)utter.voice=ttsVoice;
-  if(btn){
-    btn.classList.add('playing');
-    utter.onend=()=>btn.classList.remove('playing');
-    utter.onerror=()=>btn.classList.remove('playing');
-  }
-  speechSynthesis.speak(utter);
-}
-function speakCard(e){
-  e.stopPropagation();
-  const text=document.getElementById('fcFront').textContent;
-  speak(text,e.currentTarget);
-}
-function speakTypeCard(e){
-  e.stopPropagation();
-  const text=document.getElementById('fcTypeQuestion').textContent;
-  speak(text,e.currentTarget);
-}
-
 // ════════════════════════════════════════════
 // HOME / DAILY SESSION
 // ════════════════════════════════════════════
@@ -1914,7 +1869,6 @@ function renderWords(cat,q){
       const ph=q?pt.replace(new RegExp(`(${esc(q)})`,'gi'),'<mark>$1</mark>'):pt;
       card.innerHTML=`<div class="wc-de">${dh}</div><div class="wc-pt">${ph}</div>`;
       // TTS on tap
-      card.querySelector('.wc-de').addEventListener('click',()=>speak(de,null));
       grid.appendChild(card);
     });
     bdy.appendChild(grid);sec.appendChild(row);sec.appendChild(bdy);body.appendChild(sec);
@@ -2030,7 +1984,6 @@ function renderFlip(){
   document.getElementById('fcFlipIdx').textContent=fcFlipIdx+1;
   document.getElementById('fcFlipTotal').textContent=fcDeck.length;
   // auto-speak if DE direction
-  if(fcDir==='de') speak(front,null);
   updateFCProg(fcFlipIdx,fcDeck.length);updateFCSub();
 }
 function revealCard(){
@@ -2129,7 +2082,6 @@ function renderQuizCard(){
   document.getElementById('fcQCat').textContent=card.catLabel;
   const q=fcDir==='de'?card.de:card.pt,a=fcDir==='de'?card.pt:card.de;
   document.getElementById('fcQWord').textContent=q;
-  if(fcDir==='de')speak(q,null);
   document.getElementById('fcQPrompt').textContent=fcDir==='de'?'WAS BEDEUTET DAS AUF PORTUGIESISCH?':'WIE HEISST DAS AUF DEUTSCH?';
   const wrongs=shuffleArr(fcDeck.filter((_,i)=>i!==fcQuizIdx)).slice(0,3).map(x=>fcDir==='de'?x.pt:x.de);
   const opts=shuffleArr([a,...wrongs]);
@@ -2199,7 +2151,6 @@ function renderTypeCard(){
   document.getElementById('typeSubmitBtn').style.display='';
   document.getElementById('typeSubmitBtn').disabled=false;
   document.getElementById('typeNextBtn').style.display='none';
-  if(fcDir==='de')speak(q,null);
   setTimeout(()=>inp.focus(),100);
   updateFCProg(fcTypeIdx,fcDeck.length);updateFCSub();
 }
@@ -2409,18 +2360,25 @@ function resetGrammar(){
 // ════════════════════════════════════════════
 let rFL='all',rFT='all',rFiltered=[],rHistory=[],rCurrentIdx=-1;
 function initReader(){
-  rebuildFiltered();renderSidebars();updateReaderMobile();
-  window.addEventListener('resize',updateReaderMobile);
+  rebuildFiltered();renderSidebars();
 }
-function updateReaderMobile(){
+function updateLayout(){
   const mob=window.innerWidth<700;
-  document.getElementById('rhFilter').style.display=mob?'':'none';
-  document.getElementById('emptyFilterBtn').style.display=mob?'':'none';
-  document.getElementById('readerSidebarD').style.display=mob?'none':'flex';
+  // top tabs vs bottom nav
   document.getElementById('topTabs').style.display=mob?'none':'flex';
-  if(document.getElementById('panel-reader').classList.contains('active'))
-    document.getElementById('panel-reader').style.flexDirection=mob?'column':'row';
+  // reader sidebar
+  const rsd=document.getElementById('readerSidebarD');
+  if(rsd)rsd.style.display=mob?'none':'flex';
+  const rhf=document.getElementById('rhFilter');
+  if(rhf)rhf.style.display=mob?'':'none';
+  const efb=document.getElementById('emptyFilterBtn');
+  if(efb)efb.style.display=mob?'':'none';
+  // reader flex direction
+  const rp=document.getElementById('panel-reader');
+  if(rp&&rp.classList.contains('active'))
+    rp.style.flexDirection=mob?'column':'row';
 }
+function updateReaderMobile(){updateLayout();}
 function setRF(dim,val){
   if(dim==='level'){rFL=val;['all','A2','B1','B2'].forEach(x=>['rf-','mrf-'].forEach(p=>{const el=document.getElementById(p+x);if(el)el.className='f-btn'+(val===x?' active'+(x==='all'?' all':''):'');}));}
   else{rFT=val;['all','news','dialog','story','email'].forEach(x=>['rft-','mrft-'].forEach(p=>{const el=document.getElementById(p+x);if(el)el.className='f-btn'+(val===x?' active'+(x==='all'?' all':''):'');}));}
@@ -2486,6 +2444,7 @@ function renderReaderText(tx,histPos){
   document.getElementById('readerBody').scrollTop=0;
   setupTT();P.readCount=(P.readCount||0)+1;saveP();renderSidebars();
   if(window.innerWidth>=700)document.getElementById('panel-reader').style.flexDirection='row';
+  else document.getElementById('panel-reader').style.flexDirection='column';
 }
 function addVHL(html){
   return html.replace(/\b([A-Za-züöäÜÖÄß]{4,})\b/g,(m)=>{
@@ -2502,7 +2461,6 @@ function setupTT(){
     el.addEventListener('mouseleave',()=>{tt.style.display='none';});
     el.addEventListener('click',e=>{
       e.stopPropagation();
-      speak(e.target.dataset.de,null);
       document.getElementById('ttDE').textContent=e.target.dataset.de;
       document.getElementById('ttPT').textContent=e.target.dataset.pt;
       tt.style.display='block';
@@ -2565,8 +2523,9 @@ function confirmReset(){
 // BOOT
 // ════════════════════════════════════════════
 P.sessions++;saveP();
-initTTS();
 updateTopbar();
+updateLayout();
+window.addEventListener('resize', updateLayout);
 initWords();
 initFC();
 initReader();
