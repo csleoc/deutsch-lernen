@@ -855,7 +855,7 @@ body.dark .wq-item, body.dark .struct-item { background: var(--border) }
 <!-- ═══ HEUTE (Home) ═══ -->
 <div class="tab-panel active" id="panel-home">
   <div class="home-panel">
-    <div class="home-greeting">Guten Tag! 👋<br><span id="homeGreetSub">Bereit zu lernen?</span></div>
+    <div class="home-greeting"><span id="homeGreetMain">Guten Tag! 👋</span><br><span id="homeGreetSub" style="color:var(--text-muted);font-size:16px;font-weight:700">Bereit zu lernen?</span></div>
 
     <!-- streak card -->
     <div class="streak-card">
@@ -1869,11 +1869,13 @@ function refreshHome(){
   document.getElementById('srsNewCount').textContent=newC.length;
   document.getElementById('srsKnownCount').textContent=Object.keys(P.known).length;
 
-  const greet=document.getElementById('homeGreetSub');
   const h=new Date().getHours();
-  if(h<12)greet.textContent='Guten Morgen! 🌅';
-  else if(h<18)greet.textContent='Guten Nachmittag! ☀️';
-  else greet.textContent='Guten Abend! 🌙';
+  const greetMain=document.getElementById('homeGreetMain');
+  const greetSub=document.getElementById('homeGreetSub');
+  if(h<5){greetMain.textContent='Gute Nacht! 🌙';greetSub.textContent='Schon so spät?';}
+  else if(h<12){greetMain.textContent='Guten Morgen! 🌅';greetSub.textContent='Perfekt für eine neue Runde!';}
+  else if(h<18){greetMain.textContent='Guten Tag! 👋';greetSub.textContent='Bereit zu lernen?';}
+  else{greetMain.textContent='Guten Abend! 🌙';greetSub.textContent='Noch ein paar Karten?';}
 
   // update goal input listener
   document.getElementById('dailyGoalInput').oninput=()=>{
