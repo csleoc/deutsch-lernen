@@ -1,0 +1,3810 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kanban Metrics dashboard</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --bg: #f6f3ee;
+      --card: #ffffff;
+      --ink: #07111f;
+      --muted: #667085;
+      --accent: #0532FF;
+      --accent-soft: #eef2ff;
+      --line: #ddd6cb;
+      --line-strong: #cfc7ba;
+      --surface: #fbfaf7;
+      --shadow: 0 1px 2px rgba(9, 20, 33, 0.04), 0 12px 30px rgba(9, 20, 33, 0.06);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(233, 140, 173, 0.22), transparent 24%),
+        linear-gradient(180deg, #faf7f2 0%, var(--bg) 100%);
+      overflow-x: hidden;
+    }
+    body.dark {
+      --bg: #0e131b;
+      --card: #171d27;
+      --ink: #eef3fb;
+      --muted: #aab5c8;
+      --accent-soft: #1a2340;
+      --line: #313b4b;
+      --line-strong: #445065;
+      --surface: #111822;
+      background:
+        radial-gradient(circle at top left, rgba(5, 50, 255, 0.16), transparent 22%),
+        linear-gradient(180deg, #0b1017 0%, var(--bg) 100%);
+    }
+    .wrap {
+      max-width: 1680px;
+      margin: 0 auto;
+      padding: 14px;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 12px;
+      min-height: 100vh;
+    }
+    .side, .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .side {
+      padding: 14px;
+      position: sticky;
+      top: 10px;
+      align-self: start;
+      max-height: calc(100vh - 20px);
+      overflow: auto;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 31px;
+      color: #0532FF;
+      line-height: 1.1;
+    }
+    h3 {
+      margin: 14px 0 6px;
+      font-size: 18px;
+    }
+    .muted { color: var(--muted); font-size: 13px; }
+    .kpi {
+      border: 1px dashed #9ca3af;
+      border-radius: 8px;
+      padding: 8px;
+      margin-bottom: 8px;
+      background: #f9fafb;
+    }
+    .side-separator {
+      border-top: 1px solid var(--line);
+      margin: 12px 0;
+    }
+    .side-footer {
+      margin-top: 14px;
+    }
+    .quick-info-card {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px;
+      min-height: 84px;
+    }
+    .quick-info-card h4 {
+      margin: 0 0 4px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .quick-info-card .muted {
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .kpi strong {
+      display: block;
+      font-size: 18px;
+      color: #0532FF;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(130px, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .controls .field {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px;
+      min-height: 84px;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: inherit;
+    }
+    input, select {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 6px;
+      font-size: 13px;
+      background: white;
+      color: var(--ink);
+    }
+    .main {
+      display: grid;
+      gap: 10px;
+    }
+    .main, .panel, .tab-content { min-width: 0; }
+    .row2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .chart {
+      min-height: 330px;
+      width: 100%;
+    }
+    .panel {
+      padding: 8px;
+      background: var(--card);
+    }
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .panel-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .panel h3 {
+      margin: 0 0 6px;
+      padding-left: 4px;
+      color: #0532FF;
+      font-size: 18px;
+    }
+    .insights ul { margin: 0; padding-left: 18px; }
+    .insights li { margin-bottom: 10px; line-height: 1.35; }
+    .thoughts-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .thoughts-list {
+      margin: 0;
+      padding-left: 18px;
+    }
+    .thoughts-list li {
+      margin-bottom: 9px;
+      line-height: 1.35;
+    }
+    .badge {
+      display: inline-block;
+      background: #f2eee6;
+      color: #5a5246;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      font-size: 12px;
+      padding: 4px 10px;
+      margin-left: 6px;
+    }
+    body.dark h1,
+    body.dark .panel h3,
+    body.dark .upload-help a,
+    body.dark .upload-help button,
+    body.dark .parent-link,
+    body.dark .inline-link,
+    body.dark .definition-trigger,
+    body.dark .tab-btn,
+    body.dark .kpi strong {
+      color: #eef3fb;
+    }
+    body.dark .tab-btn.active {
+      background: #0532FF;
+      color: #ffffff;
+      border-color: #0532FF;
+    }
+    body.dark .tab-btn {
+      background: #0f1620;
+      color: #eef3fb;
+      border-color: #425067;
+    }
+    body.dark .side,
+    body.dark .panel,
+    body.dark .modal-card {
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+    }
+    body.dark .kpi,
+    body.dark .controls .field,
+    body.dark .instruction-step,
+    body.dark .parent-card,
+    body.dark .stats-table th,
+    body.dark .modal-head,
+    body.dark .table-wrap {
+      background: #111822;
+      border-color: var(--line);
+      color: var(--ink);
+    }
+    body.dark .kpi {
+      border-style: dashed;
+    }
+    body.dark input,
+    body.dark select,
+    body.dark .type-picker > summary,
+    body.dark .type-options,
+    body.dark .small-btn,
+    body.dark .modal-toggle,
+    body.dark .definition-trigger {
+      background: #0f1620;
+      color: var(--ink);
+      border-color: #425067;
+    }
+    body.dark .type-options label,
+    body.dark .theme-toggle,
+    body.dark .muted,
+    body.dark .small,
+    body.dark .stats-sub {
+      color: var(--muted);
+    }
+    body.dark .badge {
+      background: #202938;
+      color: #e7edf9;
+      border-color: #425067;
+    }
+    body.dark table,
+    body.dark th,
+    body.dark td {
+      color: var(--ink);
+      border-color: #273142;
+    }
+    body.dark th {
+      background: #111822;
+    }
+    body.dark .excluded-row {
+      background: #131a24;
+    }
+    body.dark .item-meta code {
+      background: #0f1620;
+      border-color: #425067;
+      color: #eef3fb;
+    }
+    body.dark .modal-close {
+      color: #c9d3e3;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin: 4px 0;
+      overflow: auto;
+    }
+    .controls-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .tab-btn {
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      padding: 7px 12px;
+      font-weight: 700;
+      color: #0532FF;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .tab-btn.active {
+      background: #0532FF;
+      color: #fff;
+      border-color: #0532FF;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .type-picker { position: relative; }
+    .type-picker > summary {
+      list-style: none;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+      font-size: 14px;
+      padding: 11px 14px;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .type-picker > summary::-webkit-details-marker { display: none; }
+    .type-options {
+      position: absolute;
+      z-index: 20;
+      width: 100%;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 8px;
+      margin-top: 4px;
+      max-height: 210px;
+      overflow: auto;
+      box-shadow: 0 18px 36px rgba(9, 20, 33, 0.12);
+    }
+    .type-options label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      margin: 0;
+      padding: 4px 2px;
+      cursor: pointer;
+    }
+    .type-options input[type="checkbox"] { width: auto; }
+    .type-actions {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .type-actions button {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      color: var(--ink);
+      padding: 6px 9px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .picker-search {
+      width: 100%;
+      margin-bottom: 6px;
+      padding: 7px 9px;
+      font-size: 12px;
+    }
+    .definition-trigger {
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      color: #0532FF;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-bottom: 8px;
+    }
+    .theme-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      margin: 8px 0 4px;
+      color: var(--ink);
+      cursor: pointer;
+    }
+    .theme-toggle.compact {
+      margin: 0;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      white-space: nowrap;
+    }
+    .theme-toggle input {
+      width: auto;
+      margin: 0;
+      accent-color: #0532FF;
+    }
+    .period-picker .type-options {
+      left: 0;
+      right: auto;
+      width: 620px;
+      max-height: none;
+      padding: 8px;
+    }
+    .period-picker-layout {
+      display: grid;
+      grid-template-columns: 136px 1fr 1fr;
+      gap: 0;
+      align-items: start;
+    }
+    .period-quick-col,
+    .period-calendar-col {
+      padding: 8px;
+    }
+    .period-quick-col {
+      border-right: 1px solid var(--line);
+    }
+    .period-picker h5 {
+      margin: 0 0 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .period-quick-list {
+      display: grid;
+      gap: 6px;
+    }
+    .period-quick-list button {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--ink);
+      padding: 7px 10px;
+      text-align: left;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    .period-quick-list button.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 700;
+      box-shadow: inset 0 0 0 1px var(--accent);
+    }
+    .period-calendar-col {
+      border-right: 1px solid var(--line);
+    }
+    .period-calendar-col:last-of-type {
+      border-right: 0;
+    }
+    .period-month-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .period-month-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .period-nav {
+      display: inline-flex;
+      gap: 4px;
+    }
+    .period-nav button {
+      width: 24px;
+      height: 24px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 12px;
+      line-height: 1;
+    }
+    .period-weekdays,
+    .period-days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+    }
+    .period-weekdays span {
+      text-align: center;
+      font-size: 10px;
+      color: var(--muted);
+      padding: 2px 0;
+    }
+    .period-days button,
+    .period-days span {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+    }
+    .period-days span {
+      color: #9ca3af;
+    }
+    .period-days button {
+      border: 0;
+      background: #eef2f7;
+      color: #1f2937;
+      cursor: pointer;
+    }
+    .period-days button.selected {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 0 0 2px #ffffff, 0 0 0 3px var(--accent);
+    }
+    .period-days button.in-range {
+      background: #dbeafe;
+      color: #1f2937;
+    }
+    .period-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border-top: 1px solid var(--line);
+    }
+    .period-selection {
+      font-size: 10px;
+      color: var(--muted);
+      min-width: 0;
+      font-weight: 600;
+    }
+    .period-inline-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+      margin-top: 0;
+    }
+    body.dark .period-nav button {
+      background: #0f1620;
+      color: var(--ink);
+      border-color: #425067;
+    }
+    body.dark .period-days button {
+      background: #2b3442;
+      color: #eef3fb;
+    }
+    body.dark .period-days button.in-range {
+      background: #1c3d7a;
+    }
+    @media (max-width: 1100px) {
+      .period-picker .type-options {
+        width: 520px;
+      }
+      .period-picker-layout {
+        grid-template-columns: 124px 1fr 1fr;
+      }
+    }
+    @media (max-width: 860px) {
+      .period-picker .type-options {
+        width: 360px;
+      }
+      .period-picker-layout {
+        grid-template-columns: 1fr;
+      }
+      .period-quick-col,
+      .period-calendar-col {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .period-calendar-col:last-of-type {
+        border-bottom: 0;
+      }
+    }
+    body.dark .theme-toggle.compact {
+      background: #0f1620;
+      border-color: #425067;
+      color: #eef3fb;
+    }
+
+    .table-tools {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .table-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .small-btn {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      color: var(--ink);
+      padding: 10px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    #shuffleThoughts {
+      background: #0532FF;
+      color: #fff;
+      border-color: #0532FF;
+    }
+    .upload-help {
+      margin-top: 6px;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    .upload-help a,
+    .upload-help button,
+    .parent-link,
+    .inline-link {
+      color: #0532FF;
+      font-weight: 600;
+    }
+    .upload-help button {
+      border: 0;
+      padding: 0;
+      background: transparent;
+      cursor: pointer;
+      text-decoration: underline;
+      font-size: inherit;
+      line-height: inherit;
+      font-weight: inherit;
+    }
+    .instruction-steps {
+      display: grid;
+      gap: 10px;
+    }
+    .instruction-step {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      background: var(--surface);
+    }
+    .instruction-step strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--ink);
+    }
+    .instruction-shot {
+      margin-top: 8px;
+      border: 1px dashed #94a3b8;
+      border-radius: 8px;
+      padding: 8px;
+      background: #fff;
+      color: #64748b;
+      font-size: 12px;
+    }
+    .instruction-shot img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 6px;
+      border: 1px solid #e5e7eb;
+      margin-top: 6px;
+    }
+    .parent-layout {
+      display: grid;
+      gap: 10px;
+    }
+    .parent-summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 8px;
+    }
+    .parent-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      background: var(--surface);
+    }
+    .parent-card .label {
+      font-size: 12px;
+      color: #64748b;
+      margin-bottom: 4px;
+    }
+    .parent-card .value {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .table-wrap {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: auto;
+      max-height: 72vh;
+      background: #fff;
+      width: 100%;
+      overscroll-behavior-x: contain;
+    }
+    table {
+      border-collapse: collapse;
+      width: max-content;
+      min-width: 100%;
+      font-size: 12px;
+    }
+    th, td {
+      border-bottom: 1px solid #ede7dc;
+      padding: 12px 10px;
+      text-align: left;
+      vertical-align: top;
+      white-space: normal;
+      word-break: break-word;
+    }
+    th {
+      position: sticky;
+      top: 0;
+      background: #faf8f3;
+      font-weight: 700;
+      color: var(--ink);
+      cursor: pointer;
+      position: sticky;
+      position: -webkit-sticky;
+      overflow: visible;
+    }
+    th.no-sort { cursor: default; }
+    th.resizable {
+      position: sticky;
+      position: -webkit-sticky;
+    }
+    .th-inner {
+      position: relative;
+      padding-right: 10px;
+    }
+    .col-resizer {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      width: 12px;
+      height: calc(100% + 12px);
+      cursor: col-resize;
+      z-index: 3;
+    }
+    .col-resizer::after {
+      content: "";
+      position: absolute;
+      top: 6px;
+      bottom: 6px;
+      left: 5px;
+      width: 2px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.7);
+    }
+    .small { font-size: 11px; color: #6b7280; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.2;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+    td.cell-nowrap,
+    th.cell-nowrap {
+      white-space: nowrap;
+    }
+    .metric-cell {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 72px;
+      padding: 10px 14px;
+      text-align: center;
+      font-weight: 700;
+      border-radius: 999px;
+      border: 1px solid transparent;
+    }
+    .metric-good {
+      background: #c9e7b7;
+      color: #152238;
+      border-color: #b2d89a;
+    }
+    .metric-mid {
+      background: #f6e7a6;
+      color: #152238;
+      border-color: #ead88b;
+    }
+    .metric-warn {
+      background: #f7c98f;
+      color: #152238;
+      border-color: #ecb574;
+    }
+    .metric-bad {
+      background: #f4a696;
+      color: #152238;
+      border-color: #eb9380;
+    }
+    body.dark .metric-good,
+    body.dark .metric-mid,
+    body.dark .metric-warn,
+    body.dark .metric-bad {
+      color: #111827;
+    }
+    .status-pill-done {
+      background: #e7f8ee;
+      color: #177245;
+      border-color: #a7e5c1;
+    }
+    .status-pill-active {
+      background: #e7f0ff;
+      color: #2959a8;
+      border-color: #b7ccf3;
+    }
+    .status-pill-other {
+      background: #eef2f7;
+      color: #5c6b84;
+      border-color: #cfd7e3;
+    }
+    body.dark .status-pill-done {
+      background: rgba(34, 197, 94, 0.16);
+      color: #b6f0c8;
+      border-color: rgba(34, 197, 94, 0.35);
+    }
+    body.dark .status-pill-active {
+      background: rgba(59, 130, 246, 0.16);
+      color: #c6dcff;
+      border-color: rgba(59, 130, 246, 0.35);
+    }
+    body.dark .status-pill-other {
+      background: rgba(148, 163, 184, 0.16);
+      color: #d6dee9;
+      border-color: rgba(148, 163, 184, 0.35);
+    }
+    .excluded-row {
+      opacity: 0.58;
+      background: #faf8f3;
+    }
+    td.metric-td {
+      padding: 8px 10px;
+      min-width: 92px;
+      text-align: center;
+      vertical-align: middle;
+    }
+    .modal-toggle {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 13px;
+      padding: 9px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .icon-btn {
+      width: 38px;
+      min-width: 38px;
+      height: 34px;
+      padding: 0;
+      display: inline-grid;
+      place-items: center;
+      font-size: 18px;
+      line-height: 1;
+    }
+    .definition-list {
+      display: grid;
+      gap: 12px;
+    }
+    .definition-list p {
+      margin: 0;
+      line-height: 1.45;
+    }
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(7, 17, 31, 0.34);
+      z-index: 100;
+      padding: 16px;
+    }
+    .modal.open { display: flex; }
+    .modal-card {
+      width: min(980px, 100%);
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: 0 30px 60px rgba(7, 17, 31, 0.18);
+      overflow: hidden;
+    }
+    .modal-card.chart-modal-card {
+      width: min(1200px, 96vw);
+      max-height: 92vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+    .modal-card.table-modal-card {
+      width: min(1400px, 98vw);
+      max-height: 92vh;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+    }
+    #chartModalPlot {
+      min-height: 70vh;
+      width: 100%;
+    }
+    .compact-modal {
+      width: min(760px, 100%);
+    }
+    .instructions-modal-card {
+      width: min(920px, 96vw);
+      max-height: 88vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+    .tiny-modal {
+      width: min(680px, 92vw);
+    }
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-bottom: 1px solid #ede7dc;
+      background: #faf8f3;
+    }
+    .modal-head h3 { margin: 0; color: var(--ink); }
+    .modal-close {
+      border: 0;
+      background: transparent;
+      font-size: 26px;
+      line-height: 1;
+      cursor: pointer;
+      color: var(--muted);
+    }
+    .modal-body { padding: 12px 14px; }
+    .table-modal-card .modal-body {
+      overflow: auto;
+      min-height: 0;
+    }
+    .instructions-modal-card .modal-body {
+      overflow-y: auto;
+      min-height: 0;
+    }
+    .item-meta {
+      font-size: 15px;
+      line-height: 1.45;
+      color: #1f2937;
+    }
+    .item-meta code {
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      padding: 1px 4px;
+      border-radius: 4px;
+      user-select: text;
+    }
+    .stats-title {
+      font-size: 28px;
+      font-weight: 700;
+      text-align: center;
+      margin: 6px 0;
+      color: var(--ink);
+    }
+    .stats-sub {
+      text-align: center;
+      margin-bottom: 10px;
+      color: var(--muted);
+    }
+    .stats-table {
+      width: 100%;
+      min-width: auto;
+      font-size: 14px;
+      border-collapse: collapse;
+    }
+    .stats-table th,
+    .stats-table td {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 6px 8px;
+      text-align: center;
+    }
+    .stats-table th:first-child,
+    .stats-table td:first-child {
+      text-align: left;
+      font-weight: 700;
+      width: 170px;
+    }
+
+    @media (max-width: 1200px) {
+      .wrap { grid-template-columns: 1fr; }
+      .side { position: static; max-height: none; }
+      .controls { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+      .row2 { grid-template-columns: 1fr; }
+      .table-tools { grid-template-columns: 1fr; }
+      .controls-footer { flex-direction: column; align-items: stretch; }
+    }
+    @media (max-width: 720px) {
+      .controls { grid-template-columns: 1fr; }
+    }
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 140ms ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(3px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <aside class="side">
+      <h1>📈 Flow metrics</h1>
+      <div class="muted">Live dashboard generated from Jira export (CSV/XLSX)</div>
+
+      <button id="openDefinitions" class="definition-trigger" type="button">Kanban Metrics Definition</button>
+
+      <h3>📌 Summary</h3>
+      <div id="scopeSummary" class="kpi"></div>
+
+      <div class="side-separator"></div>
+
+      <h3>🔎 Insights</h3>
+      <div class="insights" id="insights"></div>
+
+      <div class="side-separator"></div>
+
+      <div class="thoughts-head">
+        <h3>💭 Potential Questions</h3>
+        <button id="shuffleThoughts" class="small-btn" type="button">Shuffle</button>
+      </div>
+      <div id="thoughts" class="insights"></div>
+
+      <div class="side-separator"></div>
+
+      <div class="side-footer">
+        <div class="quick-info-card">
+          <h4>Quick Info</h4>
+          <div class="muted" id="quickInfo">Loading sample file...</div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="panel">
+        <div class="controls">
+          <div class="field">
+            <label>Upload Data (CSV/XLSX)</label>
+            <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" />
+            <div class="upload-help">
+              <a href="https://moia-dev.atlassian.net/jira/software/projects/MOIA/apps/fa43796a-9eeb-48a9-95b0-d5fe0be2a16b/43b77e06-43fd-47ab-94fd-818100136ee8" target="_blank" rel="noopener noreferrer">ActionableAgile</a>
+              <button id="openAaHelp" type="button">(instructions)</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>Period</label>
+            <details id="periodDetails" class="type-picker period-picker">
+              <summary id="periodSummary">All time</summary>
+              <div class="type-options">
+                <div class="period-picker-layout">
+                  <div class="period-quick-col">
+                    <h5>Quick Select</h5>
+                    <div class="period-quick-list" id="periodQuickOptions">
+                      <button type="button" data-period="ALL">All</button>
+                      <button type="button" data-period="LAST_7_DAYS">Last 7 Days</button>
+                      <button type="button" data-period="THIS_MONTH">This Month</button>
+                      <button type="button" data-period="LAST_MONTH">Last Month</button>
+                      <button type="button" data-period="CURRENT_QUARTER">This Quarter</button>
+                      <button type="button" data-period="LAST_QUARTER">Last Quarter</button>
+                      <button type="button" data-period="CURRENT_YEAR">This Year</button>
+                    </div>
+                  </div>
+                  <div class="period-calendar-col">
+                    <h5>Start Date</h5>
+                    <div class="period-month-head">
+                      <div class="period-month-title" id="periodStartMonthLabel"></div>
+                      <div class="period-nav">
+                        <button id="periodStartPrev" type="button" aria-label="Previous month">‹</button>
+                        <button id="periodStartNext" type="button" aria-label="Next month">›</button>
+                      </div>
+                    </div>
+                    <div class="period-weekdays">
+                      <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                    </div>
+                    <div id="periodStartGrid" class="period-days"></div>
+                  </div>
+                  <div class="period-calendar-col">
+                    <h5>End Date</h5>
+                    <div class="period-month-head">
+                      <div class="period-month-title" id="periodEndMonthLabel"></div>
+                      <div class="period-nav">
+                        <button id="periodEndPrev" type="button" aria-label="Previous month">‹</button>
+                        <button id="periodEndNext" type="button" aria-label="Next month">›</button>
+                      </div>
+                    </div>
+                    <div class="period-weekdays">
+                      <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                    </div>
+                    <div id="periodEndGrid" class="period-days"></div>
+                  </div>
+                </div>
+                <div class="period-footer">
+                  <div class="period-selection" id="periodSelectionText">No custom period selected</div>
+                  <div class="period-inline-actions">
+                  <button id="clearPeriodCustom" type="button">Clear</button>
+                  <button id="applyPeriodCustom" type="button">Apply</button>
+                  </div>
+                </div>
+              </div>
+            </details>
+            <select id="periodSelect" style="display:none;"></select>
+          </div>
+          <div class="field">
+            <label>Percentile</label>
+            <select id="pctSelect">
+              <option value="70">P70</option>
+              <option value="75">P75</option>
+              <option value="85" selected>P85</option>
+              <option value="90">P90</option>
+              <option value="95">P95</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Include Types</label>
+            <details id="typeDetails" class="type-picker">
+              <summary id="typeSummary">All issue types</summary>
+              <div id="typeOptions" class="type-options"></div>
+            </details>
+          </div>
+          <div class="field">
+            <label>Components</label>
+            <details id="componentDetails" class="type-picker">
+              <summary id="componentSummary">All components</summary>
+              <div id="componentOptions" class="type-options"></div>
+            </details>
+          </div>
+          <div class="field">
+            <label>Labels</label>
+            <details id="labelDetails" class="type-picker">
+              <summary id="labelSummary">All labels</summary>
+              <div id="labelOptions" class="type-options"></div>
+            </details>
+          </div>
+        </div>
+        <div class="controls-footer">
+          <div class="tabs">
+            <button id="tabDashboard" class="tab-btn active" data-tab="dashboard">Dashboard</button>
+            <button id="tabTable" class="tab-btn" data-tab="table">Items Table</button>
+            <button id="tabParent" class="tab-btn" data-tab="parent">Deliveries by Parent</button>
+          </div>
+          <label class="theme-toggle compact"><input id="darkModeToggle" type="checkbox"> Dark mode</label>
+        </div>
+      </section>
+
+      <div id="dashboardTab" class="tab-content active">
+        <section class="row2">
+          <section class="panel">
+            <div class="panel-head">
+              <h3>System Lead Time Scatterplot</h3>
+              <div class="panel-actions">
+                <button id="openCycleStats" class="modal-toggle" type="button">Lead Time Summary</button>
+                <button class="modal-toggle icon-btn amplify-btn" type="button" data-target="leadScatter" data-title="System Lead Time Scatterplot" aria-label="Amplify">⤢</button>
+              </div>
+            </div>
+            <div id="leadScatter" class="chart"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head">
+              <h3>System Lead Time Histogram</h3>
+              <button class="modal-toggle icon-btn amplify-btn" type="button" data-target="leadHistogram" data-title="System Lead Time Histogram" aria-label="Amplify">⤢</button>
+            </div>
+            <div id="leadHistogram" class="chart"></div>
+          </section>
+        </section>
+
+        <section class="row2">
+          <section class="panel">
+            <div class="panel-head">
+              <h3>Monthly Throughput Run Chart</h3>
+              <button class="modal-toggle icon-btn amplify-btn" type="button" data-target="throughputRun" data-title="Monthly Throughput Run Chart" aria-label="Amplify">⤢</button>
+            </div>
+            <div id="throughputRun" class="chart"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head">
+              <h3>Monthly Throughput Breakdown</h3>
+              <div class="panel-actions">
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;">
+                  <span>View</span>
+                  <select id="throughputBreakdownGranularity" style="width:auto;min-width:96px;">
+                    <option value="monthly">Monthly</option>
+                    <option value="weekly">Weekly</option>
+                  </select>
+                </label>
+                <button class="modal-toggle icon-btn amplify-btn" type="button" data-target="throughputBreakdown" data-title="Monthly Throughput Breakdown" aria-label="Amplify">⤢</button>
+              </div>
+            </div>
+            <div id="throughputBreakdown" class="chart"></div>
+          </section>
+        </section>
+
+        <section class="row2">
+          <section class="panel">
+            <div class="panel-head">
+              <h3>WIP Run Chart</h3>
+              <div class="panel-actions">
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;">
+                  <span>View</span>
+                  <select id="wipGranularity" style="width:auto;min-width:96px;">
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                </label>
+                <button class="modal-toggle icon-btn amplify-btn" type="button" data-target="wipRun" data-title="WIP Run Chart" aria-label="Amplify">⤢</button>
+              </div>
+            </div>
+            <div id="wipRun" class="chart"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head">
+              <h3>Aging Work In Progress</h3>
+              <button class="modal-toggle icon-btn amplify-btn" type="button" data-target="agingWip" data-title="Aging Work In Progress" aria-label="Amplify">⤢</button>
+            </div>
+            <div id="agingWip" class="chart"></div>
+          </section>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h3>Flow Balance: Items In vs Throughput vs WIP</h3>
+            <div class="panel-actions">
+              <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;">
+                <span>View</span>
+                <select id="flowBalanceGranularity" style="width:auto;min-width:96px;">
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </label>
+              <button class="modal-toggle icon-btn amplify-btn" type="button" data-target="flowBalance" data-title="Flow Balance: Items In vs Throughput vs WIP" aria-label="Amplify">⤢</button>
+            </div>
+          </div>
+          <div id="flowBalance" class="chart" style="min-height: 360px;"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h3>CFD - Cumulative Flow Diagram</h3>
+            <div class="panel-actions">
+              <button id="openCfdStats" class="modal-toggle" type="button">Summary Statistics</button>
+              <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;">
+                <input id="cfdDoneZero" type="checkbox" style="width:auto;"> All columns start from zero
+              </label>
+              <button class="modal-toggle icon-btn amplify-btn" type="button" data-target="cfd" data-title="CFD - Cumulative Flow Diagram" aria-label="Amplify">⤢</button>
+            </div>
+          </div>
+          <div id="cfd" class="chart" style="min-height: 460px;"></div>
+        </section>
+      </div>
+
+      <div id="tableTab" class="tab-content">
+        <section class="panel">
+          <h3>Items Table</h3>
+          <div class="table-tools">
+            <input id="tableSearch" type="text" placeholder="Filter table (key, summary, labels, components...)" />
+            <div class="table-actions">
+              <select id="tableStatusFilter">
+                <option value="ALL">All statuses</option>
+              </select>
+              <button id="downloadTableBtn" class="small-btn" type="button">Download XLSX</button>
+              <button id="amplifyTableBtn" class="modal-toggle icon-btn" type="button" aria-label="Amplify table">⤢</button>
+              <button id="clearExclusionsBtn" class="small-btn" type="button">Clear exclusions</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr id="itemsTableHeadRow"></tr>
+              </thead>
+              <tbody id="itemsTableBody"></tbody>
+            </table>
+          </div>
+          <div class="small" id="tableCount"></div>
+        </section>
+      </div>
+      <div id="parentTab" class="tab-content">
+        <section class="panel parent-layout">
+          <h3>Deliveries by Parent</h3>
+          <div class="parent-summary" id="parentSummary"></div>
+          <div class="panel-head">
+            <h3 style="margin:0;padding-left:0;">Parent Delivery Focus</h3>
+            <button class="modal-toggle icon-btn amplify-btn" type="button" data-target="parentFocusChart" data-title="Parent Delivery Focus" aria-label="Amplify">⤢</button>
+          </div>
+          <div id="parentFocusChart" class="chart"></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th data-parent-sort="parent">Parent</th>
+                  <th data-parent-sort="count">Delivered items</th>
+                  <th data-parent-sort="share">Share of scope</th>
+                  <th data-parent-sort="avgLead">Avg lead time</th>
+                  <th data-parent-sort="p85">P85 lead time</th>
+                  <th data-parent-sort="latestDone">Latest done date</th>
+                  <th data-parent-sort="typesText">Issue types</th>
+                </tr>
+              </thead>
+              <tbody id="parentTableBody"></tbody>
+            </table>
+          </div>
+          <div class="small" id="parentTableCount"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <div id="definitionsModal" class="modal" aria-hidden="true">
+    <div class="modal-card compact-modal">
+      <div class="modal-head">
+        <h3>Kanban Metrics Definition</h3>
+        <button id="closeDefinitions" class="modal-close" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="definition-list">
+          <p><b>Throughput:</b> Delivered items in a selected time window.</p>
+          <p><b>System Lead Time:</b> Time from first active workflow stage to done.</p>
+          <p><b>Customer Lead Time:</b> Time from first queue stage to done.</p>
+          <p><b>WIP:</b> Items started in active flow and not yet done.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="aaHelpModal" class="modal" aria-hidden="true">
+    <div class="modal-card instructions-modal-card">
+      <div class="modal-head">
+        <h3>Export Instructions from Actionable Agile</h3>
+        <button id="closeAaHelp" class="modal-close" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="instruction-steps">
+          <div class="instruction-step">
+            <strong>Step 1</strong>
+            Click here to create a new data set.
+            <div class="instruction-shot">Screenshot 1: Create a new dataset.<img src="instructions%201.png" alt="Step 1 - Create a new dataset"></div>
+          </div>
+          <div class="instruction-step">
+            <strong>Step 2</strong>
+            Select your team board, the one with the blue label, so it brings all workflow columns already configured. Then click Next.
+            <div class="instruction-shot">Screenshot 2: Select your team board and click Next.<img src="instructions%202.png" alt="Step 2 - Select team board and click next"></div>
+          </div>
+          <div class="instruction-step">
+            <strong>Step 3</strong>
+            Review the workflow mapping and click Next.
+            <div class="instruction-shot">Screenshot 3: Workflow stage mapping.<img src="instructions%203.png" alt="Step 3 - Workflow stage mapping"></div>
+          </div>
+          <div class="instruction-step">
+            <strong>Step 4</strong>
+            Add the extra fields you want, click <b>Add fields</b>, and then finish.
+            <div class="instruction-shot">Screenshot 4: Add fields and finish.<img src="instructions%204.png" alt="Step 4 - Add fields and finish"></div>
+          </div>
+          <div class="instruction-step">
+            <strong>Step 5</strong>
+            Go to <b>Source Data</b>.
+            <div class="instruction-shot">Screenshot 5: Source Data view.<img src="instructions%205.png" alt="Step 5 - Source data view"></div>
+          </div>
+          <div class="instruction-step">
+            <strong>Step 6</strong>
+            Click <b>Export CSV</b>, save it, and upload it here.
+            <div class="instruction-shot">Screenshot 6: Export CSV and upload it to this dashboard.<img src="instructions%206.png" alt="Step 6 - Export CSV and upload it"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="cycleModal" class="modal" aria-hidden="true">
+    <div class="modal-card compact-modal">
+      <div class="modal-head">
+        <h3>Lead Time Summary Statistics</h3>
+        <button id="closeCycleStats" class="modal-close" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="cycleStatsCount" class="stats-title"></div>
+        <div id="cycleStatsRange" class="stats-sub"></div>
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th>Percentile band</th>
+              <th>0-50%</th>
+              <th>51-70%</th>
+              <th>71-85%</th>
+              <th>86-95%</th>
+              <th>95%+</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Items in range</td>
+              <td id="bandCount1">0</td>
+              <td id="bandCount2">0</td>
+              <td id="bandCount3">0</td>
+              <td id="bandCount4">0</td>
+              <td id="bandCount5">0</td>
+            </tr>
+            <tr>
+              <td>Cumulative items</td>
+              <td id="bandCum1">0</td>
+              <td id="bandCum2">0</td>
+              <td id="bandCum3">0</td>
+              <td id="bandCum4">0</td>
+              <td id="bandCum5">0</td>
+            </tr>
+            <tr>
+              <td>Lead Time (Working Days)</td>
+              <td id="bandPct1">0</td>
+              <td id="bandPct2">0</td>
+              <td id="bandPct3">0</td>
+              <td id="bandPct4">0</td>
+              <td id="bandPct5">0</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div id="cfdStatsModal" class="modal" aria-hidden="true">
+    <div class="modal-card tiny-modal">
+      <div class="modal-head">
+        <h3>Summary Statistics</h3>
+        <button id="closeCfdStats" class="modal-close" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="cfdStatsRange" class="stats-sub"></div>
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th>Workflow Stage</th>
+              <th>Arrival Rate</th>
+              <th>Throughput</th>
+              <th>WIP</th>
+              <th>Lead Time</th>
+            </tr>
+          </thead>
+          <tbody id="cfdStatsBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div id="chartModal" class="modal" aria-hidden="true">
+    <div class="modal-card chart-modal-card">
+      <div class="modal-head">
+        <h3 id="chartModalTitle">Chart</h3>
+        <button id="closeChartModal" class="modal-close" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="chartModalPlot"></div>
+      </div>
+    </div>
+  </div>
+  <div id="itemModal" class="modal" aria-hidden="true">
+    <div class="modal-card compact-modal">
+      <div class="modal-head">
+        <h3>Work Item Details</h3>
+        <button id="closeItemModal" class="modal-close" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="itemModalBody" class="item-meta"></div>
+      </div>
+    </div>
+  </div>
+  <div id="tableModal" class="modal" aria-hidden="true">
+    <div class="modal-card table-modal-card">
+      <div class="modal-head">
+        <h3>Items Table</h3>
+        <button id="closeTableModal" class="modal-close" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body" style="padding-bottom:0;">
+        <div class="table-wrap" style="max-height:70vh;">
+          <table>
+            <thead>
+              <tr id="tableModalHeadRow"></tr>
+            </thead>
+            <tbody id="tableModalBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-body" style="padding-top:8px;">
+        <div class="small" id="tableModalCount"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const TYPE_COLORS = {
+      "Bug": "#ea4335",
+      "Task": "#4285f4",
+      "Sub-task": "#0b3d91",
+      "Sub-task Bug": "#8b0000",
+      "Story": "#2ca02c",
+      "Spike": "#ff7f0e",
+      "Unknown": "#6b7280"
+    };
+
+    const STAGE_PALETTE = ["#94a3b8", "#f59e0b", "#3b82f6", "#8b5cf6", "#10b981", "#16a34a", "#06b6d4", "#84cc16"];
+    const MOIA_BLUE = "#0532FF";
+
+    let rawItems = [];
+    let filteredForTable = [];
+    const RESIZABLE_COLUMNS = new Set(["title", "components", "labels"]);
+    let tableState = { sortKey: "doneDate", dir: -1, query: "", status: "ALL" };
+    let excludedItemIds = new Set();
+    let tableColumnWidths = {
+      exclude: 64,
+      status: 200,
+      id: 140,
+      issueType: 110,
+      title: 320,
+      sysLeadWorking: 110,
+      agingWipWorking: 100,
+      components: 180,
+      labels: 180,
+      resolution: 120,
+      parent: 120
+    };
+    let cycleStatsState = {
+      sysLead: [],
+      doneDates: [],
+      start: null,
+      end: null
+    };
+    let thoughtsPool = [];
+    let parentTableState = { sortKey: "count", dir: -1 };
+    let lastVisibleTableRows = [];
+    let cfdStatsState = {
+      start: null,
+      end: null,
+      rows: []
+    };
+    let customPeriodRange = { start: "", end: "" };
+    let multiPickerModes = {
+      components: "all",
+      labels: "all"
+    };
+    let periodCalendarState = {
+      startView: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+      endView: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+    };
+    let WORKFLOW_STAGES = [];
+    let ACTIVE_STAGES = [];
+    let DONE_STAGE = "DONE";
+    let BACKLOG_STAGE = "Backlog";
+    let TODO_STAGE = "TO DO";
+    let FIELD_MAP = {
+      id: "ID",
+      title: "Title",
+      issueType: "Issue Type",
+      blocked: "Blocked",
+      blockedDays: "Blocked Days",
+      components: "Components",
+      labels: "Labels",
+      resolution: "Resolution",
+      parent: "Parent",
+      link: "Link"
+    };
+    let pickerModes = {
+      components: "all",
+      labels: "all"
+    };
+
+    function parseDate(v) {
+      if (v === null || v === undefined) return null;
+      if (v instanceof Date && !isNaN(v)) return v;
+      if (typeof v === "number") {
+        const d = XLSX.SSF.parse_date_code(v);
+        if (!d) return null;
+        return new Date(d.y, d.m - 1, d.d);
+      }
+      const s = String(v).trim();
+      if (!s) return null;
+      let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (m) return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+      m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+      return null;
+    }
+
+    function normalizeRow(row) {
+      const norm = {};
+      Object.keys(row).forEach(k => { norm[k.trim()] = row[k]; });
+      return norm;
+    }
+
+    function keyNorm(s) {
+      return String(s || "").trim().toLowerCase();
+    }
+
+    function formatStageLabel(stage) {
+      const raw = String(stage || "").trim();
+      if (!raw) return raw;
+      const s = raw
+        .toLowerCase()
+        .replace(/[_-]+/g, " ")
+        .replace(/\s+/g, " ");
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    }
+
+    function fmtInputDate(date) {
+      if (!date) return "";
+      const d = new Date(date);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }
+
+    function monthTitle(date) {
+      return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    }
+
+    function dateKey(date) {
+      return fmtInputDate(date);
+    }
+
+    function addMonths(date, delta) {
+      return new Date(date.getFullYear(), date.getMonth() + delta, 1);
+    }
+
+    function startOfQuickPeriod(period) {
+      const now = new Date();
+      if (period === "LAST_7_DAYS") {
+        const start = new Date(now);
+        start.setDate(start.getDate() - 6);
+        return { start, end: now };
+      }
+      if (period === "THIS_MONTH") {
+        return { start: new Date(now.getFullYear(), now.getMonth(), 1), end: new Date(now.getFullYear(), now.getMonth() + 1, 0) };
+      }
+      if (period === "LAST_MONTH") {
+        return { start: new Date(now.getFullYear(), now.getMonth() - 1, 1), end: new Date(now.getFullYear(), now.getMonth(), 0) };
+      }
+      if (period === "CURRENT_QUARTER") {
+        const q = Math.floor(now.getMonth() / 3);
+        return { start: new Date(now.getFullYear(), q * 3, 1), end: new Date(now.getFullYear(), q * 3 + 3, 0) };
+      }
+      if (period === "LAST_QUARTER") {
+        const q = Math.floor(now.getMonth() / 3);
+        const startQ = q === 0 ? 3 : q - 1;
+        const y = q === 0 ? now.getFullYear() - 1 : now.getFullYear();
+        return { start: new Date(y, startQ * 3, 1), end: new Date(y, startQ * 3 + 3, 0) };
+      }
+      if (period === "CURRENT_YEAR") {
+        return { start: new Date(now.getFullYear(), 0, 1), end: new Date(now.getFullYear(), 11, 31) };
+      }
+      return null;
+    }
+
+    function jiraBrowseUrl(key, fallbackLink = "") {
+      const cleanKey = String(key || "").trim();
+      if (!cleanKey) return "";
+      if (fallbackLink) {
+        try {
+          const url = new URL(fallbackLink);
+          return `${url.origin}/browse/${cleanKey}`;
+        } catch (_) {}
+      }
+      return `https://moia-dev.atlassian.net/browse/${cleanKey}`;
+    }
+
+    function parentHref(item) {
+      return item.parent ? jiraBrowseUrl(item.parent, item.link) : "";
+    }
+
+    function firstHeader(headers, patterns) {
+      return headers.find(h => patterns.some(p => keyNorm(h) === keyNorm(p) || keyNorm(h).includes(keyNorm(p))));
+    }
+
+    function isDateLikeColumn(header, rows) {
+      const sample = rows.slice(0, 200);
+      let parsed = 0;
+      for (const row of sample) {
+        const v = normalizeRow(row)[header];
+        if (parseDate(v)) parsed += 1;
+      }
+      return parsed >= 2;
+    }
+
+    function deriveSchema(rows) {
+      if (!rows.length) return;
+      const headers = Object.keys(normalizeRow(rows[0]));
+
+      FIELD_MAP = {
+        id: firstHeader(headers, ["id", "issue key", "key"]) || "ID",
+        title: firstHeader(headers, ["title", "summary"]) || "Title",
+        issueType: firstHeader(headers, ["issue type", "work type", "type"]) || "Issue Type",
+        blocked: firstHeader(headers, ["blocked"]) || "Blocked",
+        blockedDays: firstHeader(headers, ["blocked days", "days blocked"]) || "Blocked Days",
+        components: firstHeader(headers, ["components"]) || "Components",
+        labels: firstHeader(headers, ["labels"]) || "Labels",
+        resolution: firstHeader(headers, ["resolution"]) || "Resolution",
+        parent: firstHeader(headers, ["parent", "parent key"]) || "Parent",
+        link: firstHeader(headers, ["link", "url"]) || "Link"
+      };
+
+      const titleIdx = headers.indexOf(FIELD_MAP.title);
+      const typeIdx = headers.indexOf(FIELD_MAP.issueType);
+      let stageHeaders = [];
+
+      if (titleIdx >= 0 && typeIdx > titleIdx + 1) {
+        stageHeaders = headers.slice(titleIdx + 1, typeIdx).filter(h => isDateLikeColumn(h, rows));
+      } else {
+        const excluded = new Set(Object.values(FIELD_MAP).map(keyNorm));
+        stageHeaders = headers.filter(h => !excluded.has(keyNorm(h)) && isDateLikeColumn(h, rows));
+      }
+
+      WORKFLOW_STAGES = stageHeaders.length ? stageHeaders : ["Backlog", "TO DO", "DONE"];
+      DONE_STAGE = WORKFLOW_STAGES.find(s => /(done|closed|resolved|complete)/i.test(s)) || WORKFLOW_STAGES[WORKFLOW_STAGES.length - 1];
+      if (DONE_STAGE && WORKFLOW_STAGES[WORKFLOW_STAGES.length - 1] !== DONE_STAGE) {
+        WORKFLOW_STAGES = WORKFLOW_STAGES.filter(s => s !== DONE_STAGE).concat(DONE_STAGE);
+      }
+      BACKLOG_STAGE = WORKFLOW_STAGES.find(s => /backlog/i.test(s)) || WORKFLOW_STAGES[0];
+      TODO_STAGE = WORKFLOW_STAGES.find(s => /(to do|todo|in progress|in development|wip|doing)/i.test(s) && s !== DONE_STAGE) || WORKFLOW_STAGES.find(s => s !== BACKLOG_STAGE && s !== DONE_STAGE) || BACKLOG_STAGE;
+      ACTIVE_STAGES = WORKFLOW_STAGES.filter(s => s !== DONE_STAGE);
+    }
+
+    function stageColor(stage) {
+      const idx = WORKFLOW_STAGES.indexOf(stage);
+      if (idx < 0) return "#6b7280";
+      return STAGE_PALETTE[idx % STAGE_PALETTE.length];
+    }
+
+    function doneDate(item) {
+      return item.dates[DONE_STAGE] || null;
+    }
+
+    function systemStartDate(item) {
+      return item.dates[TODO_STAGE] ||
+        ACTIVE_STAGES.map(s => item.dates[s]).find(Boolean) ||
+        item.dates[BACKLOG_STAGE] ||
+        null;
+    }
+
+    function customerStartDate(item) {
+      return item.dates[BACKLOG_STAGE] ||
+        ACTIVE_STAGES.map(s => item.dates[s]).find(Boolean) ||
+        null;
+    }
+
+    function wipStartDate(item) {
+      const candidates = ACTIVE_STAGES.filter(s => s !== BACKLOG_STAGE).map(s => item.dates[s]).filter(Boolean);
+      return candidates[0] || null;
+    }
+
+    function toItem(row) {
+      const r = normalizeRow(row);
+      const item = {
+        id: (r[FIELD_MAP.id] || "").trim(),
+        title: r[FIELD_MAP.title] || "",
+        issueType: (r[FIELD_MAP.issueType] || "Unknown").trim() || "Unknown",
+        blocked: (r[FIELD_MAP.blocked] || "").toLowerCase() === "yes",
+        blockedDays: Number(r[FIELD_MAP.blockedDays]) || 0,
+        components: r[FIELD_MAP.components] || "",
+        labels: r[FIELD_MAP.labels] || "",
+        resolution: r[FIELD_MAP.resolution] || "",
+        parent: r[FIELD_MAP.parent] || "",
+        link: r[FIELD_MAP.link] || "",
+        dates: {}
+      };
+      WORKFLOW_STAGES.forEach(s => item.dates[s] = parseDate(r[s]));
+      return item;
+    }
+
+    function daysBetween(a, b) {
+      if (!a || !b) return null;
+      const da = new Date(a.getFullYear(), a.getMonth(), a.getDate());
+      const db = new Date(b.getFullYear(), b.getMonth(), b.getDate());
+      const ms = db - da;
+      return Math.round(ms / 86400000);
+    }
+
+    function workingDaysBetween(a, b) {
+      if (!a || !b) return null;
+      const start = new Date(a.getFullYear(), a.getMonth(), a.getDate());
+      const end = new Date(b.getFullYear(), b.getMonth(), b.getDate());
+      if (end < start) return null;
+      let n = 0;
+      const d = new Date(start);
+      while (d <= end) {
+        const day = d.getDay();
+        if (day !== 0 && day !== 6) n += 1;
+        d.setDate(d.getDate() + 1);
+      }
+      return n;
+    }
+
+    function percentile(arr, p) {
+      if (!arr.length) return null;
+      const s = [...arr].sort((a, b) => a - b);
+      const idx = Math.ceil((p / 100) * s.length) - 1;
+      return s[Math.max(0, Math.min(idx, s.length - 1))];
+    }
+
+    function mean(arr) {
+      if (!arr.length) return 0;
+      return arr.reduce((a, b) => a + b, 0) / arr.length;
+    }
+
+    function fmtDate(d) {
+      return d ? d.toISOString().slice(0, 10) : "";
+    }
+
+    function monthKey(d) {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    }
+
+    function inRange(d, start, end) {
+      return !!d && d >= start && d <= end;
+    }
+
+    function typeColor(t) {
+      return TYPE_COLORS[t] || "#6b7280";
+    }
+
+    function splitMultiValue(raw) {
+      return String(raw || "")
+        .split(/[;,]/)
+        .map(v => v.trim())
+        .filter(Boolean);
+    }
+
+    function statusPillClass(statusRaw) {
+      const s = String(statusRaw || "").toLowerCase();
+      if (/(done|closed|resolved|complete)/.test(s)) return "status-pill-done";
+      if (/(in development|in progress|progress|review|ready for prod|ready for production|dev review)/.test(s)) return "status-pill-active";
+      return "status-pill-other";
+    }
+
+    function typePillStyle(issueType) {
+      const color = typeColor(issueType);
+      return `background:${color}1a;border-color:${color}55;color:${color};`;
+    }
+
+    function leadMetricClass(value) {
+      const v = Number(value);
+      if (!Number.isFinite(v)) return "";
+      if (v <= 5) return "metric-good";
+      if (v <= 10) return "metric-mid";
+      if (v <= 20) return "metric-warn";
+      return "metric-bad";
+    }
+
+    function leadMetricColor(value) {
+      const cls = leadMetricClass(value);
+      if (cls === "metric-good") return "#8cc575";
+      if (cls === "metric-mid") return "#f0dd7d";
+      if (cls === "metric-warn") return "#f6b26b";
+      return "#f28a75";
+    }
+
+    function getCurrentStage(item) {
+      let curr = null;
+      WORKFLOW_STAGES.forEach(s => {
+        if (item.dates[s]) curr = s;
+      });
+      return curr;
+    }
+
+    function getStageEntryDate(item) {
+      const curr = getCurrentStage(item);
+      return curr ? item.dates[curr] : null;
+    }
+
+    function getFilterRange(doneDates, periodValue) {
+      if (!doneDates.length) {
+        const now = new Date();
+        return [new Date(now.getFullYear(), 0, 1), now];
+      }
+      const minD = new Date(Math.min(...doneDates.map(d => d.getTime())));
+      const maxD = new Date(Math.max(...doneDates.map(d => d.getTime())));
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      if (!periodValue || periodValue === "ALL") return [minD, maxD];
+      let start;
+      let end;
+      if (periodValue === "CUSTOM" && customPeriodRange.start && customPeriodRange.end) {
+        start = parseDate(customPeriodRange.start);
+        end = parseDate(customPeriodRange.end);
+      } else if (["LAST_7_DAYS", "THIS_MONTH", "LAST_MONTH", "CURRENT_QUARTER", "LAST_QUARTER", "CURRENT_YEAR"].includes(periodValue)) {
+        const quick = startOfQuickPeriod(periodValue);
+        start = quick.start;
+        end = quick.end;
+      } else if (periodValue === "CURRENT_YEAR") {
+        start = new Date(currentYear, 0, 1);
+        end = new Date(currentYear, 11, 31);
+      } else if (periodValue === "LAST_YEAR") {
+        start = new Date(currentYear - 1, 0, 1);
+        end = new Date(currentYear - 1, 11, 31);
+      } else if (periodValue === "CURRENT_QUARTER") {
+        const q = Math.floor(now.getMonth() / 3);
+        start = new Date(currentYear, q * 3, 1);
+        end = new Date(currentYear, q * 3 + 3, 0);
+      } else if (periodValue.startsWith("YEAR:")) {
+        const y = Number(periodValue.split(":")[1]);
+        start = new Date(y, 0, 1);
+        end = new Date(y, 11, 31);
+      } else if (periodValue.startsWith("QUARTER:")) {
+        const [y, qRaw] = periodValue.split(":")[1].split("-Q");
+        const q = Number(qRaw) - 1;
+        start = new Date(Number(y), q * 3, 1);
+        end = new Date(Number(y), q * 3 + 3, 0);
+      } else {
+        return [minD, maxD];
+      }
+      start = new Date(Math.max(start.getTime(), minD.getTime()));
+      end = new Date(Math.min(end.getTime(), maxD.getTime()));
+      return [start, end];
+    }
+
+    function periodLabel(value) {
+      if (value === "CUSTOM" && customPeriodRange.start && customPeriodRange.end) {
+        return `${customPeriodRange.start} - ${customPeriodRange.end}`;
+      }
+      const map = { ALL: "All time" };
+      if (map[value]) return map[value];
+      const quickMap = {
+        LAST_7_DAYS: "Last 7 Days",
+        THIS_MONTH: "This Month",
+        LAST_MONTH: "Last Month",
+        CURRENT_QUARTER: "This Quarter",
+        LAST_QUARTER: "Last Quarter",
+        CURRENT_YEAR: "This Year"
+      };
+      if (quickMap[value]) return quickMap[value];
+      if (value.startsWith("YEAR:")) return value.split(":")[1];
+      if (value.startsWith("QUARTER:")) return value.split(":")[1].replace("-", " ");
+      return "All time";
+    }
+
+    function syncPeriodSummary() {
+      const value = document.getElementById("periodSelect").value || "ALL";
+      const el = document.getElementById("periodSummary");
+      if (el) el.textContent = periodLabel(value);
+      const selection = document.getElementById("periodSelectionText");
+      if (selection) {
+        selection.textContent = customPeriodRange.start && customPeriodRange.end
+          ? `${customPeriodRange.start} → ${customPeriodRange.end}`
+          : "No custom period selected";
+      }
+      document.querySelectorAll("#periodQuickOptions button").forEach(btn => {
+        const isActive = btn.dataset.period === value || (btn.dataset.period === "ALL" && value === "ALL");
+        btn.classList.toggle("active", isActive);
+      });
+      if (customPeriodRange.start) {
+        const startDate = parseDate(customPeriodRange.start);
+        periodCalendarState.startView = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+      }
+      if (customPeriodRange.end) {
+        const endDate = parseDate(customPeriodRange.end);
+        periodCalendarState.endView = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+      }
+      renderPeriodCalendars();
+    }
+
+    function renderCalendarGrid(kind) {
+      const view = kind === "start" ? periodCalendarState.startView : periodCalendarState.endView;
+      const grid = document.getElementById(kind === "start" ? "periodStartGrid" : "periodEndGrid");
+      const label = document.getElementById(kind === "start" ? "periodStartMonthLabel" : "periodEndMonthLabel");
+      const selectedStart = customPeriodRange.start ? parseDate(customPeriodRange.start) : null;
+      const selectedEnd = customPeriodRange.end ? parseDate(customPeriodRange.end) : null;
+      label.textContent = monthTitle(view);
+      const first = new Date(view.getFullYear(), view.getMonth(), 1);
+      const last = new Date(view.getFullYear(), view.getMonth() + 1, 0);
+      const startWeekday = first.getDay();
+      const days = [];
+      for (let i = 0; i < startWeekday; i++) days.push("<span></span>");
+      for (let day = 1; day <= last.getDate(); day++) {
+        const current = new Date(view.getFullYear(), view.getMonth(), day);
+        const key = dateKey(current);
+        const isSelected = (kind === "start" && selectedStart && key === dateKey(selectedStart)) || (kind === "end" && selectedEnd && key === dateKey(selectedEnd));
+        const inRangeSelected = selectedStart && selectedEnd && current > selectedStart && current < selectedEnd;
+        days.push(`<button type="button" class="${isSelected ? "selected" : inRangeSelected ? "in-range" : ""}" data-period-day="${key}" data-period-kind="${kind}">${day}</button>`);
+      }
+      grid.innerHTML = days.join("");
+      grid.querySelectorAll("button[data-period-day]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const key = btn.dataset.periodDay;
+          if (btn.dataset.periodKind === "start") customPeriodRange.start = key;
+          else customPeriodRange.end = key;
+          if (customPeriodRange.start && customPeriodRange.end && customPeriodRange.start > customPeriodRange.end) {
+            if (btn.dataset.periodKind === "start") customPeriodRange.end = customPeriodRange.start;
+            else customPeriodRange.start = customPeriodRange.end;
+          }
+          document.getElementById("periodSelect").value = "CUSTOM";
+          syncPeriodSummary();
+        });
+      });
+    }
+
+    function renderPeriodCalendars() {
+      renderCalendarGrid("start");
+      renderCalendarGrid("end");
+    }
+
+    function getSelectedTypes() {
+      const options = Array.from(document.querySelectorAll(".type-opt"));
+      return options.filter(x => x.checked).map(x => x.value);
+    }
+
+    function getSelectedMultiValues(cls) {
+      return Array.from(document.querySelectorAll(`.${cls}`)).filter(x => x.checked).map(x => x.value);
+    }
+
+    function setTypeSummary() {
+      const selected = getSelectedTypes();
+      const summary = document.getElementById("typeSummary");
+      const allChecked = !!document.getElementById("typeAll")?.checked;
+      if (allChecked) {
+        summary.textContent = "All issue types";
+      } else if (!selected.length) {
+        summary.textContent = "No issue types selected";
+      } else if (selected.length === 1) {
+        summary.textContent = selected[0];
+      } else {
+        summary.textContent = `${selected.length} types selected`;
+      }
+    }
+
+    function setMultiSummary(summaryId, allId, cls, emptyText, singular, modeKey = "") {
+      const selected = getSelectedMultiValues(cls);
+      const summary = document.getElementById(summaryId);
+      const allOptions = Array.from(document.querySelectorAll(`.${cls}`));
+      const mode = modeKey ? pickerModes[modeKey] : (document.getElementById(allId)?.checked ? "exclude" : "include");
+      if (!selected.length || mode === "all") {
+        summary.textContent = emptyText;
+      } else if (mode === "exclude") {
+        const excludedCount = allOptions.length - selected.length;
+        summary.textContent = excludedCount <= 0 ? emptyText : `All except ${excludedCount}`;
+      } else if (selected.length === 1) {
+        summary.textContent = selected[0];
+      } else {
+        summary.textContent = `${selected.length} selected`;
+      }
+    }
+
+    function chartLayout(extra = {}) {
+      const dark = document.body.classList.contains("dark");
+      return Object.assign({
+        margin: { l: 44, r: 20, t: 16, b: 48 },
+        paper_bgcolor: dark ? "#171d27" : "#ffffff",
+        plot_bgcolor: dark ? "#171d27" : "#ffffff",
+        font: { family: "Segoe UI, sans-serif", size: 12, color: dark ? "#e7edf9" : "#1f2937" },
+        xaxis: {
+          gridcolor: dark ? "#314055" : "#e5e7eb",
+          zerolinecolor: dark ? "#425067" : "#cbd5e1"
+        },
+        yaxis: {
+          gridcolor: dark ? "#314055" : "#e5e7eb",
+          zerolinecolor: dark ? "#425067" : "#cbd5e1"
+        },
+        legend: { orientation: "h", y: -0.2 }
+      }, extra);
+    }
+
+    function applyTheme(isDark) {
+      document.body.classList.toggle("dark", isDark);
+      const toggle = document.getElementById("darkModeToggle");
+      if (toggle) toggle.checked = isDark;
+      localStorage.setItem("flow_metrics_dark_mode", isDark ? "1" : "0");
+      if (rawItems.length) render(rawItems);
+    }
+
+    function resizeDashboardCharts() {
+      ["leadScatter", "leadHistogram", "throughputRun", "throughputBreakdown", "wipRun", "agingWip", "flowBalance", "cfd", "parentFocusChart"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.data) {
+          Plotly.Plots.resize(el);
+        }
+      });
+    }
+
+    function openItemModalFromData(item) {
+      if (!item || !item.id) return;
+      const keyHtml = item.link
+        ? `<a href="${item.link}" target="_blank" rel="noopener"><code>${item.id}</code></a>`
+        : `<code>${item.id}</code>`;
+      document.getElementById("itemModalBody").innerHTML = `
+        <div><b>Issue key:</b> ${keyHtml}</div>
+        <div><b>Issue type:</b> ${item.issueType || "Unknown"}</div>
+        <div><b>Summary:</b> ${item.summary || "-"}</div>
+        ${item.components ? `<div><b>Components:</b> ${item.components}</div>` : ""}
+        ${item.labels ? `<div><b>Labels:</b> ${item.labels}</div>` : ""}
+        ${item.startDate ? `<div><b>Start date:</b> ${item.startDate}</div>` : ""}
+        ${item.doneDate ? `<div><b>Done date:</b> ${item.doneDate}</div>` : ""}
+        ${item.blockedDays && item.blockedDays > 0 ? `<div><b>Blocked days:</b> ${item.blockedDays}</div>` : ""}
+        ${item.stage ? `<div><b>Stage:</b> ${formatStageLabel(item.stage)}</div>` : ""}
+        ${item.age !== undefined ? `<div><b>Age:</b> ${item.age} days</div>` : ""}
+        ${item.lead !== undefined ? `<div><b>Lead time:</b> ${item.lead} working days</div>` : ""}
+        <div style="margin-top:10px;"><a href="#" class="see-in-table-link" data-id="${item.id}">See in table</a></div>
+      `;
+      document.getElementById("itemModal").classList.add("open");
+      document.getElementById("itemModal").setAttribute("aria-hidden", "false");
+    }
+
+    function bindChartPointClickHandlers() {
+      ["leadScatter", "agingWip"].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el || !el.data || !el.on) return;
+        if (el.removeAllListeners) el.removeAllListeners("plotly_click");
+        el.on("plotly_click", (ev) => {
+          const p = ev?.points?.[0];
+          const data = p?.customdata;
+          if (data && data.id) openItemModalFromData(data);
+        });
+      });
+    }
+
+    function render(allItems) {
+      setTypeSummary();
+      setMultiSummary("componentSummary", "componentAll", "component-opt", "All components", "components", "components");
+      setMultiSummary("labelSummary", "labelAll", "label-opt", "All labels", "labels", "labels");
+      const pct = Number(document.getElementById("pctSelect").value || 85);
+      const period = document.getElementById("periodSelect").value || "ALL";
+      const selectedTypes = getSelectedTypes();
+      const allTypesSelected = !!document.getElementById("typeAll")?.checked;
+      const selectedComponents = getSelectedMultiValues("component-opt");
+      const selectedLabels = getSelectedMultiValues("label-opt");
+      const allComponentValues = Array.from(document.querySelectorAll(".component-opt")).map(x => x.value);
+      const allLabelValues = Array.from(document.querySelectorAll(".label-opt")).map(x => x.value);
+      const excludedComponents = allComponentValues.filter(v => !selectedComponents.includes(v));
+      const excludedLabels = allLabelValues.filter(v => !selectedLabels.includes(v));
+
+      const typedItems = allTypesSelected
+        ? [...allItems]
+        : allItems.filter(i => selectedTypes.includes(i.issueType));
+      let componentFilteredItems = typedItems;
+      if (pickerModes.components === "include" && selectedComponents.length) {
+        componentFilteredItems = typedItems.filter(i => splitMultiValue(i.components).some(v => selectedComponents.includes(v)));
+      } else if (pickerModes.components === "exclude" && excludedComponents.length) {
+        componentFilteredItems = typedItems.filter(i => !splitMultiValue(i.components).some(v => excludedComponents.includes(v)));
+      }
+      let labelFilteredItems = componentFilteredItems;
+      if (pickerModes.labels === "include" && selectedLabels.length) {
+        labelFilteredItems = componentFilteredItems.filter(i => splitMultiValue(i.labels).some(v => selectedLabels.includes(v)));
+      } else if (pickerModes.labels === "exclude" && excludedLabels.length) {
+        labelFilteredItems = componentFilteredItems.filter(i => !splitMultiValue(i.labels).some(v => excludedLabels.includes(v)));
+      }
+      const analysisItems = labelFilteredItems.filter(i => !excludedItemIds.has(i.id));
+
+      const withDone = analysisItems.filter(i => doneDate(i));
+      const doneDates = withDone.map(i => doneDate(i));
+      const [start, end] = getFilterRange(doneDates, period);
+
+      const doneInScope = withDone.filter(i => inRange(doneDate(i), start, end));
+      const sysLead = doneInScope
+        .map(i => workingDaysBetween(systemStartDate(i), doneDate(i)))
+        .filter(v => v !== null && v >= 0);
+      const custLead = doneInScope
+        .map(i => daysBetween(customerStartDate(i), doneDate(i)))
+        .filter(v => v !== null && v >= 0);
+
+      const pVal = percentile(sysLead, pct);
+      const avgWip = computeWipSeries(analysisItems, start, end).counts;
+      const avgWipValue = mean(avgWip);
+
+      document.getElementById("scopeSummary").innerHTML = `
+        <strong>${doneInScope.length} items</strong>
+        delivered from <b>${fmtDate(start)}</b> to <b>${fmtDate(end)}</b><br/>
+        P${pct} system lead time: <b>${pVal ?? "-"} working days</b><br/>
+        Avg customer lead time: <b>${custLead.length ? mean(custLead).toFixed(1) : "-"} days</b><br/>
+        Avg WIP in period: <b>${avgWip.length ? avgWipValue.toFixed(1) : "-"} items</b>
+      `;
+
+      document.getElementById("quickInfo").innerHTML =
+        `${analysisItems.length} rows <span class="badge">${doneInScope.length} in scope</span><span class="badge">${excludedItemIds.size} excluded</span>`;
+
+      drawLeadScatter(doneInScope, pct);
+      drawLeadHistogram(sysLead, pct);
+      drawThroughputRun(doneInScope);
+      drawThroughputBreakdown(doneInScope);
+      drawWipRun(analysisItems, start, end);
+      drawAgingWip(analysisItems);
+      drawFlowBalance(analysisItems, start, end);
+      drawCfd(analysisItems, start, end);
+      renderParentFocus(doneInScope);
+      renderInsights(analysisItems, doneInScope, sysLead, pVal, start, end);
+      renderThoughts(analysisItems, doneInScope, sysLead, pVal, start, end);
+      cycleStatsState = { sysLead: [...sysLead], doneDates: doneInScope.map(i => doneDate(i)).filter(Boolean), start, end };
+      updateCycleStatsModal();
+      bindChartPointClickHandlers();
+
+      filteredForTable = labelFilteredItems;
+      rebuildTableStatusFilter(filteredForTable);
+      renderTableHeader();
+      renderItemsTable(filteredForTable);
+    }
+
+    function avgThroughput(doneItems) {
+      const byMonth = new Map();
+      doneItems.forEach(i => {
+        const k = monthKey(doneDate(i));
+        byMonth.set(k, (byMonth.get(k) || 0) + 1);
+      });
+      const vals = Array.from(byMonth.values());
+      return vals.length ? mean(vals) : 0;
+    }
+
+    function drawLeadScatter(doneItems, pct) {
+      const points = doneItems
+        .map(i => {
+          const d = doneDate(i);
+          const start = systemStartDate(i);
+          const lead = workingDaysBetween(systemStartDate(i), d);
+          return (d && lead !== null && lead >= 0)
+            ? {
+              d,
+              start,
+              lead,
+              id: i.id,
+              t: i.issueType,
+              summary: i.title,
+              link: i.link,
+              blockedDays: i.blockedDays || 0,
+              components: i.components || "",
+              labels: i.labels || ""
+            }
+            : null;
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.d - b.d);
+
+      const types = Array.from(new Set(points.map(p => p.t))).sort();
+      const traces = types.map(t => {
+        const p = points.filter(x => x.t === t);
+        return {
+          x: p.map(x => x.d),
+          y: p.map(x => x.lead),
+          type: "scatter",
+          mode: "markers",
+          marker: { color: typeColor(t), size: 7, opacity: 0.78 },
+          customdata: p.map(x => ({
+            id: x.id,
+            issueType: x.t,
+            summary: x.summary,
+            lead: x.lead,
+            link: x.link,
+            components: x.components || "",
+            labels: x.labels || "",
+            startDate: x.start ? fmtDate(x.start) : "",
+            doneDate: x.d ? fmtDate(x.d) : "",
+            blockedDays: x.blockedDays || 0
+          })),
+          text: p.map(x => `${x.id} (${x.t})<br>${x.summary}<br>Lead time: ${x.lead} wd`),
+          hovertemplate: "%{text}<br>Done: %{x|%Y-%m-%d}<extra></extra>",
+          name: t
+        };
+      });
+
+      const monthly = new Map();
+      points.forEach(p => {
+        const k = monthKey(p.d);
+        const arr = monthly.get(k) || [];
+        arr.push(p.lead);
+        monthly.set(k, arr);
+      });
+      const mx = [];
+      const my = [];
+      const avgY = [];
+      monthly.forEach((arr, k) => {
+        const [yy, mm] = k.split("-").map(Number);
+        mx.push(new Date(yy, mm - 1, 15));
+        my.push(percentile(arr, pct));
+        avgY.push(Number(mean(arr).toFixed(2)));
+      });
+
+      traces.push({
+        x: mx,
+        y: my,
+        type: "scatter",
+        mode: "lines+markers",
+        line: { color: "#16a34a", width: 2 },
+        marker: { size: 6 },
+        name: `P${pct} by month`
+      });
+      traces.push({
+        x: mx,
+        y: avgY,
+        type: "scatter",
+        mode: "lines+markers",
+        line: { color: "#f59e0b", width: 2, dash: "dot" },
+        marker: { size: 5 },
+        name: "Avg by month"
+      });
+
+      Plotly.newPlot("leadScatter", traces, chartLayout({
+        yaxis: { title: "Lead Time", gridcolor: "#e5e7eb" },
+        xaxis: { title: "Done date", gridcolor: "#e5e7eb" }
+      }), { displayModeBar: false, responsive: true });
+    }
+
+    function drawLeadHistogram(sysLead, pct) {
+      const pctV = percentile(sysLead, pct);
+      Plotly.newPlot("leadHistogram", [
+        {
+          x: sysLead,
+          type: "histogram",
+          marker: { color: MOIA_BLUE },
+          nbinsx: 30,
+          name: "Frequency"
+        }
+      ], chartLayout({
+        xaxis: { title: "Lead Time", gridcolor: "#e5e7eb" },
+        yaxis: { title: "Count", gridcolor: "#e5e7eb" },
+        shapes: pctV ? [{
+          type: "line",
+          x0: pctV, x1: pctV,
+          y0: 0, y1: 1, yref: "paper",
+          line: { color: "#ef4444", width: 2, dash: "dash" }
+        }] : [],
+        annotations: pctV ? [{
+          x: pctV, y: 1, yref: "paper",
+          text: `P${pct}: ${pctV} wd`,
+          showarrow: false,
+          xanchor: "left",
+          font: { color: "#ef4444" }
+        }] : []
+      }), { displayModeBar: false, responsive: true });
+    }
+
+    function drawThroughputRun(doneItems) {
+      const m = new Map();
+      doneItems.forEach(i => {
+        const k = monthKey(doneDate(i));
+        m.set(k, (m.get(k) || 0) + 1);
+      });
+      const keys = Array.from(m.keys()).sort();
+      const vals = keys.map(k => m.get(k));
+      const avg = mean(vals);
+
+      Plotly.newPlot("throughputRun", [
+        {
+          x: keys,
+          y: vals,
+          mode: "lines+markers",
+          type: "scatter",
+          line: { color: MOIA_BLUE, width: 2 },
+          name: "Throughput",
+          hovertemplate: "%{x}<br>%{y:.1f} items<extra></extra>"
+        },
+        {
+          x: keys,
+          y: keys.map(() => avg),
+          mode: "lines",
+          type: "scatter",
+          line: { color: "#ef4444", dash: "dash" },
+          name: `Avg (${avg.toFixed(1)})`,
+          hovertemplate: "%{x}<br>%{y:.1f} items<extra></extra>"
+        }
+      ], chartLayout({
+        xaxis: { title: "Month", gridcolor: "#e5e7eb" },
+        yaxis: { title: "Delivered items", gridcolor: "#e5e7eb", rangemode: "tozero" }
+      }), { displayModeBar: false, responsive: true });
+    }
+
+    function drawThroughputBreakdown(doneItems) {
+      const granularity = document.getElementById("throughputBreakdownGranularity")?.value || "monthly";
+      const buckets = Array.from(new Set(doneItems.map(i => {
+        const done = doneDate(i);
+        if (!done) return null;
+        return granularity === "weekly"
+          ? startOfWeek(done).toISOString().slice(0, 10)
+          : monthKey(done);
+      }).filter(Boolean))).sort();
+      const types = Array.from(new Set(doneItems.map(i => i.issueType))).sort();
+      const data = types.map(t => {
+        const y = buckets.map(bucket => doneItems.filter(i => {
+          const done = doneDate(i);
+          if (!done || i.issueType !== t) return false;
+          const itemBucket = granularity === "weekly"
+            ? startOfWeek(done).toISOString().slice(0, 10)
+            : monthKey(done);
+          return itemBucket === bucket;
+        }).length);
+        return {
+          x: granularity === "weekly" ? buckets.map(b => weekLabel(new Date(b))) : buckets,
+          y,
+          type: "bar",
+          name: t,
+          marker: { color: typeColor(t) }
+        };
+      });
+      Plotly.newPlot("throughputBreakdown", data, chartLayout({
+        barmode: "stack",
+        xaxis: { title: granularity === "weekly" ? "Week" : "Month", gridcolor: "#e5e7eb", tickangle: granularity === "weekly" ? -35 : 0 },
+        yaxis: { title: "Delivered items", gridcolor: "#e5e7eb" }
+      }), { displayModeBar: false, responsive: true });
+    }
+
+    function daterange(start, end) {
+      const out = [];
+      const d = new Date(start);
+      while (d <= end) {
+        out.push(new Date(d));
+        d.setDate(d.getDate() + 1);
+      }
+      return out;
+    }
+
+    function maxObservedWorkflowDate(items) {
+      const allDates = items.flatMap(item => WORKFLOW_STAGES.map(stage => item.dates[stage]).filter(Boolean));
+      return allDates.length ? new Date(Math.max(...allDates.map(d => d.getTime()))) : null;
+    }
+
+    function computeWipSeries(items, start, end) {
+      const latestObserved = maxObservedWorkflowDate(items);
+      const safeEnd = latestObserved && latestObserved < end ? latestObserved : end;
+      const days = daterange(start, safeEnd);
+      const counts = days.map(day => items.filter(i => {
+        const todo = wipStartDate(i);
+        const done = doneDate(i);
+        return todo && todo <= day && (!done || done > day);
+      }).length);
+      return { days, counts };
+    }
+
+    function startOfWeek(date) {
+      const d = new Date(date);
+      const day = d.getDay();
+      const diff = day === 0 ? -6 : 1 - day;
+      d.setDate(d.getDate() + diff);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+
+    function endOfWeek(date) {
+      const d = startOfWeek(date);
+      d.setDate(d.getDate() + 6);
+      return d;
+    }
+
+    function weekLabel(date) {
+      const start = startOfWeek(date);
+      const end = endOfWeek(date);
+      const mm1 = String(start.getMonth() + 1).padStart(2, "0");
+      const dd1 = String(start.getDate()).padStart(2, "0");
+      const mm2 = String(end.getMonth() + 1).padStart(2, "0");
+      const dd2 = String(end.getDate()).padStart(2, "0");
+      return `${mm1}/${dd1} - ${mm2}/${dd2}`;
+    }
+
+    function aggregateSeries(days, counts, granularity) {
+      if (granularity === "daily") {
+        return {
+          x: days,
+          y: counts,
+          avg: counts.map((_, idx) => {
+            const from = Math.max(0, idx - 6);
+            return mean(counts.slice(from, idx + 1));
+          }),
+          xTitle: "Date",
+          yTitle: "WIP items",
+          seriesName: "Daily WIP",
+          avgName: "7d moving avg"
+        };
+      }
+
+      const buckets = new Map();
+      days.forEach((day, idx) => {
+        const keyDate = granularity === "weekly"
+          ? startOfWeek(day)
+          : new Date(day.getFullYear(), day.getMonth(), 1);
+        const key = keyDate.toISOString().slice(0, 10);
+        if (!buckets.has(key)) {
+          buckets.set(key, { date: keyDate, vals: [] });
+        }
+        buckets.get(key).vals.push(counts[idx]);
+      });
+
+      const rows = Array.from(buckets.values()).sort((a, b) => a.date - b.date);
+      const x = rows.map(r => r.date);
+      const y = rows.map(r => Number(mean(r.vals).toFixed(2)));
+      const avgValue = y.length ? Number(mean(y).toFixed(2)) : 0;
+      return {
+        x,
+        y,
+        avg: y.map(() => avgValue),
+        xTitle: granularity === "weekly" ? "Week" : "Month",
+        yTitle: "Average WIP items",
+        seriesName: granularity === "weekly" ? "Weekly avg WIP" : "Monthly avg WIP",
+        avgName: `Avg (${avgValue.toFixed(2)})`
+      };
+    }
+
+    function drawWipRun(items, start, end) {
+      const { days, counts } = computeWipSeries(items, start, end);
+      const granularity = document.getElementById("wipGranularity")?.value || "daily";
+      const series = aggregateSeries(days, counts, granularity);
+      Plotly.newPlot("wipRun", [
+        {
+          x: series.x,
+          y: series.y,
+          mode: "lines+markers",
+          type: "scatter",
+          name: series.seriesName,
+          line: { color: "#2563eb", width: 1.5 },
+          marker: { size: 4 }
+        },
+        {
+          x: series.x,
+          y: series.avg,
+          mode: "lines",
+          type: "scatter",
+          name: series.avgName,
+          line: { color: "#16a34a", width: 2 }
+        }
+      ], chartLayout({
+        xaxis: { title: series.xTitle, gridcolor: "#e5e7eb" },
+        yaxis: { title: series.yTitle, gridcolor: "#e5e7eb" }
+      }), { displayModeBar: false, responsive: true });
+    }
+
+    function drawFlowBalance(items, start, end) {
+      const { days, counts } = computeWipSeries(items, start, end);
+      const granularity = document.getElementById("flowBalanceGranularity")?.value || "weekly";
+      const buckets = new Map();
+
+      days.forEach((day, idx) => {
+        const bucketStart = granularity === "monthly"
+          ? new Date(day.getFullYear(), day.getMonth(), 1)
+          : startOfWeek(day);
+        const key = granularity === "monthly"
+          ? monthKey(bucketStart)
+          : bucketStart.toISOString().slice(0, 10);
+        if (!buckets.has(key)) {
+          buckets.set(key, {
+            date: bucketStart,
+            label: granularity === "monthly"
+              ? bucketStart.toLocaleDateString("en-US", { month: "short", year: "numeric" })
+              : weekLabel(bucketStart),
+            wipVals: [],
+            itemsIn: 0,
+            throughput: 0
+          });
+        }
+        buckets.get(key).wipVals.push(counts[idx]);
+      });
+
+      items.forEach(item => {
+        const entered = systemStartDate(item);
+        if (entered && inRange(entered, start, end)) {
+          const bucketStart = granularity === "monthly"
+            ? new Date(entered.getFullYear(), entered.getMonth(), 1)
+            : startOfWeek(entered);
+          const key = granularity === "monthly"
+            ? monthKey(bucketStart)
+            : bucketStart.toISOString().slice(0, 10);
+          if (buckets.has(key)) buckets.get(key).itemsIn += 1;
+        }
+        const done = doneDate(item);
+        if (done && inRange(done, start, end)) {
+          const bucketStart = granularity === "monthly"
+            ? new Date(done.getFullYear(), done.getMonth(), 1)
+            : startOfWeek(done);
+          const key = granularity === "monthly"
+            ? monthKey(bucketStart)
+            : bucketStart.toISOString().slice(0, 10);
+          if (buckets.has(key)) buckets.get(key).throughput += 1;
+        }
+      });
+
+      const rows = Array.from(buckets.values()).sort((a, b) => a.date - b.date);
+      const x = rows.map(r => r.label);
+      const itemsIn = rows.map(r => r.itemsIn);
+      const throughput = rows.map(r => r.throughput);
+      const avgWip = rows.map(r => Number(mean(r.wipVals).toFixed(1)));
+
+      Plotly.newPlot("flowBalance", [
+        {
+          x,
+          y: itemsIn,
+          type: "bar",
+          name: "Items In",
+          marker: { color: MOIA_BLUE },
+          hovertemplate: "%{x}<br>Items In: %{y}<extra></extra>"
+        },
+        {
+          x,
+          y: throughput,
+          type: "bar",
+          name: "Throughput",
+          marker: { color: "#16a34a" },
+          hovertemplate: "%{x}<br>Throughput: %{y}<extra></extra>"
+        },
+        {
+          x,
+          y: avgWip,
+          type: "scatter",
+          mode: "lines+markers",
+          name: "Average WIP",
+          line: { color: "#ef4444", width: 2.5 },
+          marker: { size: 6 },
+          yaxis: "y2",
+          hovertemplate: "%{x}<br>Average WIP: %{y:.1f}<extra></extra>"
+        }
+      ], chartLayout({
+        barmode: "group",
+        xaxis: { title: granularity === "monthly" ? "Months" : "Weeks", gridcolor: "#e5e7eb", tickangle: -35 },
+        yaxis: { title: "Items in / out", gridcolor: "#e5e7eb", rangemode: "tozero" },
+        yaxis2: {
+          title: "Average WIP",
+          overlaying: "y",
+          side: "right",
+          rangemode: "tozero",
+          showgrid: false
+        }
+      }), { displayModeBar: false, responsive: true });
+    }
+
+    function drawAgingWip(items) {
+      const today = new Date();
+      const open = items.filter(i => !doneDate(i));
+      const pts = open
+        .map(i => {
+          const stage = getCurrentStage(i);
+          const start = getStageEntryDate(i);
+          if (!stage || !start) return null;
+          const age = daysBetween(start, today);
+          if (age === null || age < 0) return null;
+          return {
+            stage,
+            start,
+            age,
+            id: i.id,
+            title: i.title,
+            issueType: i.issueType,
+            link: i.link,
+            blockedDays: i.blockedDays || 0,
+            components: i.components || "",
+            labels: i.labels || ""
+          };
+        })
+        .filter(Boolean);
+
+      const ages = pts.map(x => x.age).filter(v => v !== null && v >= 0);
+      const p50 = percentile(ages, 50) ?? 0;
+      const p70 = percentile(ages, 70) ?? 0;
+      const p85 = percentile(ages, 85) ?? 0;
+      const p95 = percentile(ages, 95) ?? 0;
+      const maxAge = ages.length ? Math.max(...ages) : 0;
+      const yMax = Math.max(20, Math.ceil(Math.max(maxAge * 1.1, p95 * 1.2, 1)));
+
+      const b1 = Math.max(1, p50);
+      const b2 = Math.max(b1 + 1, p70);
+      const b3 = Math.max(b2 + 1, p85);
+      const b4 = Math.max(b3 + 1, p95);
+
+      const types = Array.from(new Set(pts.map(x => x.issueType))).sort();
+      const traces = types.map(issueType => {
+        const p = pts.filter(x => x.issueType === issueType);
+        return {
+          x: p.map(x => x.stage),
+          y: p.map(x => x.age),
+          mode: "markers",
+          type: "scatter",
+          marker: { size: 8, color: typeColor(issueType), opacity: 0.8 },
+          name: issueType,
+          customdata: p.map(x => ({
+            id: x.id,
+            issueType: x.issueType,
+            summary: x.title,
+            age: x.age,
+            stage: x.stage,
+            link: x.link,
+            components: x.components || "",
+            labels: x.labels || "",
+            startDate: x.start ? fmtDate(x.start) : "",
+            doneDate: "",
+            blockedDays: x.blockedDays || 0
+          })),
+          text: p.map(x => `${x.id} (${x.issueType})<br>${x.title}<br>Age: ${x.age}d`),
+          hovertemplate: "%{text}<extra></extra>"
+        };
+      });
+
+      Plotly.newPlot("agingWip", traces, chartLayout({
+        xaxis: {
+          title: "Current stage",
+          gridcolor: "#e5e7eb",
+          type: "category",
+          tickvals: ACTIVE_STAGES,
+          ticktext: ACTIVE_STAGES.map(formatStageLabel)
+        },
+        yaxis: { title: "Age in current stage", gridcolor: "#e5e7eb", range: [0, yMax] },
+        shapes: [
+          { type: "rect", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 0, y1: b1, fillcolor: "rgba(16,185,129,0.24)", line: { width: 0 } },
+          { type: "rect", xref: "paper", yref: "y", x0: 0, x1: 1, y0: b1, y1: b2, fillcolor: "rgba(110,231,183,0.26)", line: { width: 0 } },
+          { type: "rect", xref: "paper", yref: "y", x0: 0, x1: 1, y0: b2, y1: b3, fillcolor: "rgba(253,224,71,0.28)", line: { width: 0 } },
+          { type: "rect", xref: "paper", yref: "y", x0: 0, x1: 1, y0: b3, y1: b4, fillcolor: "rgba(251,146,60,0.25)", line: { width: 0 } },
+          { type: "rect", xref: "paper", yref: "y", x0: 0, x1: 1, y0: b4, y1: yMax, fillcolor: "rgba(239,68,68,0.22)", line: { width: 0 } },
+          { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: b1, y1: b1, line: { color: "rgba(107,114,128,0.7)", width: 1, dash: "dash" } },
+          { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: b2, y1: b2, line: { color: "rgba(107,114,128,0.7)", width: 1, dash: "dash" } },
+          { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: b3, y1: b3, line: { color: "rgba(107,114,128,0.7)", width: 1, dash: "dash" } },
+          { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: b4, y1: b4, line: { color: "rgba(107,114,128,0.7)", width: 1, dash: "dash" } }
+        ],
+        annotations: [
+          { xref: "paper", yref: "y", x: 0.995, y: b1, text: `50% (${b1})`, showarrow: false, xanchor: "right", font: { size: 11, color: "#374151" } },
+          { xref: "paper", yref: "y", x: 0.995, y: b2, text: `70% (${b2})`, showarrow: false, xanchor: "right", font: { size: 11, color: "#374151" } },
+          { xref: "paper", yref: "y", x: 0.995, y: b3, text: `85% (${b3})`, showarrow: false, xanchor: "right", font: { size: 11, color: "#374151" } },
+          { xref: "paper", yref: "y", x: 0.995, y: b4, text: `95% (${b4})`, showarrow: false, xanchor: "right", font: { size: 11, color: "#374151" } }
+        ]
+      }), { displayModeBar: false, responsive: true });
+    }
+
+    function currentOpenStageAt(item, day) {
+      const done = doneDate(item);
+      if (done && done <= day) return null;
+      for (let i = WORKFLOW_STAGES.length - 1; i >= 0; i--) {
+        const stage = WORKFLOW_STAGES[i];
+        if (stage === DONE_STAGE) continue;
+        const entered = item.dates[stage];
+        if (entered && entered <= day) return stage;
+      }
+      return null;
+    }
+
+    function nextStageDateForItem(item, stage) {
+      const idx = WORKFLOW_STAGES.indexOf(stage);
+      if (idx < 0) return null;
+      for (let i = idx + 1; i < WORKFLOW_STAGES.length; i++) {
+        const next = item.dates[WORKFLOW_STAGES[i]];
+        if (next) return next;
+      }
+      return null;
+    }
+
+    function buildCfdStats(items, days, stageCounts, doneSeries, start, end) {
+      const spanDays = Math.max(1, days.length);
+      const systemStarts = items.filter(i => inRange(systemStartDate(i), start, end)).length;
+      const systemThroughput = items.filter(i => inRange(doneDate(i), start, end)).length;
+      const systemWip = mean(days.map((_, idx) => ACTIVE_STAGES.reduce((sum, stage) => sum + (stageCounts[stage][idx] || 0), 0)));
+      const rows = [{
+        stage: "System",
+        arrivalRate: systemStarts / spanDays,
+        throughput: systemThroughput / spanDays,
+        wip: systemWip,
+        cycleTime: systemThroughput ? systemWip / (systemThroughput / spanDays) : null
+      }];
+
+      WORKFLOW_STAGES.forEach(stage => {
+        if (stage === DONE_STAGE) {
+          const doneCount = items.filter(i => inRange(doneDate(i), start, end)).length;
+          rows.push({
+            stage,
+            arrivalRate: doneCount / spanDays,
+            throughput: null,
+            wip: null,
+            cycleTime: null
+          });
+          return;
+        }
+
+        const arrivals = items.filter(i => inRange(i.dates[stage], start, end)).length;
+        const exits = items.filter(i => {
+          const next = nextStageDateForItem(i, stage);
+          return inRange(next, start, end);
+        }).length;
+        const wip = mean(stageCounts[stage]);
+        const durations = items
+          .map(i => {
+            const entered = i.dates[stage];
+            const next = nextStageDateForItem(i, stage);
+            return entered && next ? daysBetween(entered, next) : null;
+          })
+          .filter(v => v !== null && v >= 0);
+
+        rows.push({
+          stage,
+          arrivalRate: arrivals / spanDays,
+          throughput: exits / spanDays,
+          wip,
+          cycleTime: durations.length ? mean(durations) : null
+        });
+      });
+
+      cfdStatsState = { start, end, rows };
+    }
+
+    function renderCfdStatsModal() {
+      document.getElementById("cfdStatsRange").textContent =
+        cfdStatsState.start && cfdStatsState.end
+          ? `${fmtDate(cfdStatsState.start)} - ${fmtDate(cfdStatsState.end)} (${daysBetween(cfdStatsState.start, cfdStatsState.end) + 1} days)`
+          : "No data in current scope";
+      document.getElementById("cfdStatsBody").innerHTML = cfdStatsState.rows.map(row => `
+        <tr>
+          <td>${formatStageLabel(row.stage)}</td>
+          <td>${row.arrivalRate === null ? "-" : row.arrivalRate.toFixed(2)}</td>
+          <td>${row.throughput === null ? "-" : row.throughput.toFixed(2)}</td>
+          <td>${row.wip === null ? "-" : row.wip.toFixed(2)}</td>
+          <td>${row.cycleTime === null ? "-" : row.cycleTime.toFixed(2)}</td>
+        </tr>
+      `).join("");
+    }
+
+    function drawCfd(items, start, end) {
+      const latestObserved = maxObservedWorkflowDate(items);
+      const today = new Date();
+      const cappedEnd = latestObserved ? new Date(Math.min(latestObserved.getTime(), today.getTime(), end.getTime())) : new Date(Math.min(today.getTime(), end.getTime()));
+      const days = daterange(start, cappedEnd);
+      const allStartFromZero = !!document.getElementById("cfdDoneZero")?.checked;
+      const stageCounts = {};
+      ACTIVE_STAGES.forEach(stage => stageCounts[stage] = []);
+      const doneSeries = [];
+
+      days.forEach((day) => {
+        const dailyCounts = {};
+        ACTIVE_STAGES.forEach(stage => dailyCounts[stage] = 0);
+        let doneCount = 0;
+
+        items.forEach(item => {
+          const done = doneDate(item);
+          if (done && inRange(done, start, day)) {
+            doneCount += 1;
+            return;
+          }
+          const stage = currentOpenStageAt(item, day);
+          if (stage) dailyCounts[stage] += 1;
+        });
+
+        doneSeries.push(doneCount);
+        ACTIVE_STAGES.forEach(stage => stageCounts[stage].push(dailyCounts[stage]));
+      });
+
+      const plotStages = [DONE_STAGE, ...ACTIVE_STAGES.slice().reverse()];
+      const stageCycleTimes = Object.fromEntries(ACTIVE_STAGES.map(stage => {
+        const durations = items
+          .map(item => {
+            const entered = item.dates[stage];
+            const next = nextStageDateForItem(item, stage);
+            return entered && next ? daysBetween(entered, next) : null;
+          })
+          .filter(v => v !== null && v >= 0);
+        return [stage, durations.length ? Number(mean(durations).toFixed(1)) : null];
+      }));
+      const data = plotStages.map(stage => {
+        const rawSeries = stage === DONE_STAGE ? doneSeries : stageCounts[stage];
+        const baseValue = stage === DONE_STAGE ? 0 : (allStartFromZero ? (rawSeries[0] || 0) : 0);
+        const ySeries = rawSeries.map(v => Math.max(0, v - baseValue));
+        const cycleValues = stage === DONE_STAGE
+          ? ySeries.map(() => null)
+          : ySeries.map(() => stageCycleTimes[stage]);
+        return {
+          x: days,
+          y: ySeries,
+          stackgroup: "one",
+          type: "scatter",
+          mode: "lines",
+          line: { width: 1, color: stageColor(stage) },
+          fillcolor: stageColor(stage),
+          name: formatStageLabel(stage),
+          customdata: ySeries.map((value, idx) => [value, cycleValues[idx]]),
+          hovertemplate: stage === DONE_STAGE
+            ? `${formatStageLabel(stage)} | Delivered: %{customdata[0]} items<extra></extra>`
+            : `${formatStageLabel(stage)} | LT: %{customdata[1]:.1f}d | WIP: %{customdata[0]}<extra></extra>`
+        };
+      });
+
+      buildCfdStats(items, days, stageCounts, doneSeries, start, cappedEnd);
+      renderCfdStatsModal();
+
+      Plotly.newPlot("cfd", data, chartLayout({
+        xaxis: { title: "Date", gridcolor: "#e5e7eb" },
+        yaxis: { title: "Items", gridcolor: "#e5e7eb" },
+        hovermode: "x unified",
+        hoverlabel: {
+          align: "left",
+          font: { size: 13 }
+        }
+      }), { displayModeBar: false, responsive: true });
+    }
+
+function renderParentFocus(doneItems) {
+      const summary = document.getElementById("parentSummary");
+      const body = document.getElementById("parentTableBody");
+      const count = document.getElementById("parentTableCount");
+      const grouped = new Map();
+
+      doneItems.forEach(item => {
+        const parent = String(item.parent || "").trim() || "No parent";
+        const group = grouped.get(parent) || {
+          parent,
+          href: parent === "No parent" ? "" : parentHref(item),
+          count: 0,
+          leadTimes: [],
+          latestDone: null,
+          types: new Set()
+        };
+        group.count += 1;
+        const lead = workingDaysBetween(systemStartDate(item), doneDate(item));
+        if (lead !== null && lead >= 0) group.leadTimes.push(lead);
+        const done = doneDate(item);
+        if (done && (!group.latestDone || done > group.latestDone)) group.latestDone = done;
+        group.types.add(item.issueType);
+        grouped.set(parent, group);
+      });
+
+      const totalDone = doneItems.length;
+      const rows = Array.from(grouped.values()).map(r => ({
+        ...r,
+        share: totalDone ? Number((((r.count / totalDone) * 100)).toFixed(1)) : 0,
+        avgLead: r.leadTimes.length ? Number(mean(r.leadTimes).toFixed(1)) : null,
+        p85: r.leadTimes.length ? percentile(r.leadTimes, 85) : null,
+        typesText: Array.from(r.types).sort().join(", "),
+        typesArr: Array.from(r.types).sort()
+      }));
+
+      rows.sort((a, b) => {
+        const { sortKey, dir } = parentTableState;
+        const av = a[sortKey];
+        const bv = b[sortKey];
+        if (sortKey === "latestDone") {
+          const at = av ? av.getTime() : -Infinity;
+          const bt = bv ? bv.getTime() : -Infinity;
+          return (at - bt) * dir;
+        }
+        if (typeof av === "number" || typeof bv === "number") {
+          return (((av ?? -Infinity) - (bv ?? -Infinity)) || String(a.parent).localeCompare(String(b.parent))) * dir;
+        }
+        return String(av ?? "").localeCompare(String(bv ?? ""), undefined, { sensitivity: "base", numeric: true }) * dir;
+      });
+
+      const top = rows.slice(0, 12);
+
+      summary.innerHTML = `
+        <div class="parent-card"><div class="label">Parents in scope</div><div class="value">${rows.length}</div></div>
+        <div class="parent-card"><div class="label">Delivered items</div><div class="value">${totalDone}</div></div>
+        <div class="parent-card"><div class="label">Largest parent batch</div><div class="value">${top[0]?.count || 0}</div></div>
+        <div class="parent-card"><div class="label">Top parent</div><div class="value" style="font-size:16px;">${top[0]?.href ? `<a class="parent-link" href="${top[0].href}" target="_blank" rel="noopener noreferrer">${top[0].parent}</a>` : (top[0]?.parent || "-")}</div></div>
+      `;
+
+      Plotly.newPlot("parentFocusChart", [{
+        x: top.map(r => r.count).reverse(),
+        y: top.map(r => r.parent).reverse(),
+        type: "bar",
+        orientation: "h",
+        marker: { color: "#4285f4" },
+        text: top.map(r => `${r.count}`).reverse(),
+        textposition: "outside",
+        hovertemplate: "%{y}<br>Delivered: %{x}<extra></extra>"
+      }], chartLayout({
+        margin: { l: 220, r: 40, t: 24, b: 48 },
+        xaxis: { title: "Delivered items", gridcolor: "#e5e7eb" },
+        yaxis: { title: "Parent", automargin: true }
+      }), { displayModeBar: false, responsive: true });
+
+      body.innerHTML = rows.map(r => {
+        const parentCell = r.href
+          ? `<a class="parent-link" href="${r.href}" target="_blank" rel="noopener noreferrer">${r.parent}</a>`
+          : r.parent;
+        const avgLeadCell = r.avgLead === null ? "" : `<span class="metric-cell ${leadMetricClass(r.avgLead)}">${r.avgLead}</span>`;
+        const p85Cell = r.p85 === null ? "" : `<span class="metric-cell ${leadMetricClass(r.p85)}">${r.p85}</span>`;
+        const typesHtml = r.typesArr.map(type => `<span class="pill" style="${typePillStyle(type)}">${type}</span>`).join(" ");
+        return `
+          <tr>
+            <td>${parentCell}</td>
+            <td>${r.count}</td>
+            <td>${r.share.toFixed(1)}%</td>
+            <td class="metric-td">${avgLeadCell}</td>
+            <td class="metric-td">${p85Cell}</td>
+            <td>${r.latestDone ? fmtDate(r.latestDone) : ""}</td>
+            <td>${typesHtml}</td>
+          </tr>
+        `;
+      }).join("");
+
+      count.textContent = `${rows.length} parent rows`;
+    }
+
+    function renderInsights(items, doneItems, sysLead, pVal, start, end) {
+      const today = new Date();
+      const open = items.filter(i => !doneDate(i));
+      const ages = open.map(i => ({
+        id: i.id,
+        stage: getCurrentStage(i),
+        age: daysBetween(getStageEntryDate(i), today)
+      })).filter(x => x.age !== null);
+
+      const oldest = ages.sort((a, b) => b.age - a.age)[0];
+      const oldestRaw = oldest ? open.find(i => i.id === oldest.id) : null;
+      const oldestLink = oldestRaw?.link
+        ? `<a href="${oldestRaw.link}" target="_blank" rel="noopener noreferrer">${oldest.id}</a>`
+        : (oldest ? oldest.id : "n/a");
+      const maxLead = sysLead.length ? Math.max(...sysLead) : null;
+      const blockedOpen = open.filter(i => i.blocked).length;
+      const startedInPeriod = items.filter(i => {
+        const started = systemStartDate(i);
+        return started && started >= start && started <= end;
+      }).length;
+      const finishedInPeriod = items.filter(i => {
+        const done = doneDate(i);
+        return done && done >= start && done <= end;
+      }).length;
+      const startDoneRatio = finishedInPeriod
+        ? (startedInPeriod / finishedInPeriod).toFixed(2)
+        : null;
+      const startDonePct = startDoneRatio
+        ? `${(Number(startDoneRatio) * 100).toFixed(0)}%`
+        : null;
+      const staleBacklog = open.filter(i => {
+        const stage = getCurrentStage(i);
+        const age = daysBetween(getStageEntryDate(i), today);
+        return (stage === BACKLOG_STAGE || stage === TODO_STAGE) && age !== null && age > 90;
+      }).length;
+
+      const html = `
+        <ul>
+          <li>Longest completed system lead time in scope: <b>${maxLead ?? "-"} working days</b>.</li>
+          <li>Current confidence benchmark: <b>P${document.getElementById("pctSelect").value} = ${pVal ?? "-"} working days</b>.</li>
+          <li>Selected period: <b>${startedInPeriod}</b> started vs <b>${finishedInPeriod}</b> finished${startDoneRatio ? ` (start/done ratio: <b>${startDoneRatio}</b>, <b>${startDonePct}</b>)` : ""}.</li>
+          <li>Open blocked items: <b>${blockedOpen}</b>.</li>
+          <li>Oldest active item: <b>${oldest ? `${oldestLink} (${formatStageLabel(oldest.stage)}, ${oldest.age} days)` : "n/a"}</b>.</li>
+          <li>Potential backlog cleanup candidates (>90 days in first queue): <b>${staleBacklog}</b>.</li>
+        </ul>
+      `;
+      document.getElementById("insights").innerHTML = html;
+    }
+
+    function shuffleArray(arr) {
+      const out = [...arr];
+      for (let i = out.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [out[i], out[j]] = [out[j], out[i]];
+      }
+      return out;
+    }
+
+    function buildThoughtsPool(items, doneItems, sysLead, pVal, start, end) {
+      const open = items.filter(i => !doneDate(i));
+      const doneByType = Array.from(new Set(doneItems.map(i => i.issueType))).sort((a, b) =>
+        doneItems.filter(x => x.issueType === b).length - doneItems.filter(x => x.issueType === a).length
+      );
+      const backlogAges = open
+        .filter(i => {
+          const stage = getCurrentStage(i);
+          return stage === BACKLOG_STAGE || stage === TODO_STAGE;
+        })
+        .map(i => daysBetween(getStageEntryDate(i), new Date()))
+        .filter(v => v !== null);
+      const blockedOpen = open.filter(i => i.blocked || (i.blockedDays || 0) > 0).length;
+      const parentCounts = new Map();
+      doneItems.forEach(i => {
+        const key = String(i.parent || "").trim() || "No parent";
+        parentCounts.set(key, (parentCounts.get(key) || 0) + 1);
+      });
+      const topParent = Array.from(parentCounts.entries()).sort((a, b) => b[1] - a[1])[0];
+      const avgLead = sysLead.length ? mean(sysLead).toFixed(1) : "-";
+      const avgCustomer = doneItems.length
+        ? mean(doneItems.map(i => daysBetween(customerStartDate(i), doneDate(i))).filter(v => v !== null && v >= 0)).toFixed(1)
+        : "-";
+      return [
+        `Are we starting more work than we finish between ${fmtDate(start)} and ${fmtDate(end)}?`,
+        `Which work item type is consuming most capacity right now, and is that aligned with what product expects to ship?`,
+        `Why is P${document.getElementById("pctSelect").value} at ${pVal ?? "-"} working days, and which stage contributes most to that delay?`,
+        `Is the current average system lead time of ${avgLead} working days acceptable for the kinds of requests this team handles?`,
+        `Does the gap between average customer lead time (${avgCustomer} days) and system lead time suggest the queue is too large before delivery starts?`,
+        `Are we carrying too many old items in backlog / to do, given ${backlogAges.length ? Math.max(...backlogAges) : 0} days is the oldest age there?`,
+        `Do blocked items (${blockedOpen} currently open) explain the current WIP and lead time shape, or are we seeing a deeper workflow issue?`,
+        `Is the mix of delivered work types dominated by ${doneByType[0] || "one type"}, and does that match the intended product roadmap?`,
+        `Which parent initiative is receiving most deliveries${topParent ? ` (${topParent[0]} with ${topParent[1]} items)` : ""}, and is that concentration intentional?`,
+        `Are we finishing small items quickly while larger cross-functional work stays open too long?`,
+        `Has throughput become more predictable, or are we still seeing batching behavior close to quarter boundaries?`,
+        `Would reducing active WIP improve delivery speed more than trying to push more items into the system?`,
+        `Is the current flow optimized for engineering efficiency, or for product outcomes that matter most this quarter?`,
+        `Which aging items should trigger a product conversation because they may no longer be worth finishing?`,
+        `If one more strategic initiative is added now, what existing work would have to slow down or stop?`
+      ];
+    }
+
+    function paintThoughts() {
+      const host = document.getElementById("thoughts");
+      host.innerHTML = `<ul class="thoughts-list">${thoughtsPool.slice(0, 3).map(q => `<li>${q}</li>`).join("")}</ul>`;
+    }
+
+    function renderThoughts(items, doneItems, sysLead, pVal, start, end) {
+      thoughtsPool = shuffleArray(buildThoughtsPool(items, doneItems, sysLead, pVal, start, end));
+      paintThoughts();
+    }
+
+    function updateCycleStatsModal() {
+      const sysLead = cycleStatsState.sysLead || [];
+      const doneDates = cycleStatsState.doneDates || [];
+      const count = sysLead.length;
+      const minDone = doneDates.length ? new Date(Math.min(...doneDates.map(d => d.getTime()))) : cycleStatsState.start;
+      const maxDone = doneDates.length ? new Date(Math.max(...doneDates.map(d => d.getTime()))) : cycleStatsState.end;
+      const span = (minDone && maxDone) ? (daysBetween(minDone, maxDone) + 1) : 0;
+
+      document.getElementById("cycleStatsCount").textContent = `${count} work items completed`;
+      document.getElementById("cycleStatsRange").textContent =
+        (minDone && maxDone) ? `${fmtDate(minDone)} - ${fmtDate(maxDone)} (${span} days)` : "No items in current scope";
+
+      const p50 = percentile(sysLead, 50) ?? 0;
+      const p70 = percentile(sysLead, 70) ?? 0;
+      const p85 = percentile(sysLead, 85) ?? 0;
+      const p95 = percentile(sysLead, 95) ?? 0;
+      const pMax = sysLead.length ? Math.max(...sysLead) : 0;
+
+      const c1 = sysLead.filter(v => v <= p50).length;
+      const c2 = sysLead.filter(v => v > p50 && v <= p70).length;
+      const c3 = sysLead.filter(v => v > p70 && v <= p85).length;
+      const c4 = sysLead.filter(v => v > p85 && v <= p95).length;
+      const c5 = sysLead.filter(v => v > p95).length;
+      const cum = [c1, c1 + c2, c1 + c2 + c3, c1 + c2 + c3 + c4, c1 + c2 + c3 + c4 + c5];
+
+      ["bandCount1", "bandCount2", "bandCount3", "bandCount4", "bandCount5"].forEach((id, idx) => {
+        document.getElementById(id).textContent = [c1, c2, c3, c4, c5][idx];
+      });
+      ["bandCum1", "bandCum2", "bandCum3", "bandCum4", "bandCum5"].forEach((id, idx) => {
+        document.getElementById(id).textContent = cum[idx];
+      });
+      ["bandPct1", "bandPct2", "bandPct3", "bandPct4", "bandPct5"].forEach((id, idx) => {
+        document.getElementById(id).textContent = [p50, p70, p85, p95, pMax][idx];
+      });
+    }
+
+    function rebuildFilters(items) {
+      const doneYears = Array.from(new Set(items
+        .map(i => doneDate(i))
+        .filter(Boolean)
+        .map(d => d.getFullYear())))
+        .sort((a, b) => a - b);
+      const period = document.getElementById("periodSelect");
+      const prevPeriod = period.value || "ALL";
+      const now = new Date();
+      const periodOptions = [
+        { value: "ALL", label: "All time" },
+        { value: "LAST_7_DAYS", label: "Last 7 Days" },
+        { value: "THIS_MONTH", label: "This Month" },
+        { value: "LAST_MONTH", label: "Last Month" },
+        { value: "CURRENT_QUARTER", label: "This Quarter" },
+        { value: "LAST_QUARTER", label: "Last Quarter" },
+        { value: "CURRENT_YEAR", label: "This Year" },
+        { value: "CUSTOM", label: "Custom range" },
+      ];
+      period.innerHTML = periodOptions.map(o => `<option value="${o.value}">${o.label}</option>`).join("");
+      period.value = periodOptions.some(o => o.value === prevPeriod) ? prevPeriod : "ALL";
+      syncPeriodSummary();
+
+      const types = Array.from(new Set(items.map(i => i.issueType))).sort();
+      const typeBox = document.getElementById("typeOptions");
+      const previous = Array.from(document.querySelectorAll(".type-opt")).filter(x => x.checked).map(x => x.value);
+      const previousAll = document.getElementById("typeAll") ? document.getElementById("typeAll").checked : true;
+      const previouslyAll = previousAll || previous.length === types.length;
+
+      typeBox.innerHTML = `
+        <div class="type-actions">
+          <button type="button" id="typeToggleAllBtn">${previouslyAll ? "Unselect all" : "Select all"}</button>
+        </div>
+        <label><input id="typeAll" type="checkbox" ${previouslyAll ? "checked" : ""}> All issue types</label>
+      ` + types.map(t => {
+        const checked = previouslyAll ? true : previous.includes(t);
+        return `<label><input class="type-opt" type="checkbox" value="${t.replace(/"/g, "&quot;")}" ${checked ? "checked" : ""}> ${t}</label>`;
+      }).join("");
+
+      document.getElementById("typeAll").addEventListener("change", (ev) => {
+        if (ev.target.checked) {
+          document.querySelectorAll(".type-opt").forEach(x => x.checked = true);
+        } else {
+          document.querySelectorAll(".type-opt").forEach(x => x.checked = false);
+        }
+        render(rawItems);
+      });
+
+      document.getElementById("typeToggleAllBtn").addEventListener("click", () => {
+        const nextAll = !document.getElementById("typeAll").checked;
+        document.getElementById("typeAll").checked = nextAll;
+        document.querySelectorAll(".type-opt").forEach(x => x.checked = nextAll);
+        rebuildFilters(rawItems);
+        render(rawItems);
+      });
+
+      document.querySelectorAll(".type-opt").forEach(el => {
+        el.addEventListener("change", () => {
+          const all = document.querySelectorAll(".type-opt");
+          const selected = Array.from(all).filter(x => x.checked).length;
+          document.getElementById("typeAll").checked = selected === all.length;
+          document.getElementById("typeToggleAllBtn").textContent = document.getElementById("typeAll").checked ? "Unselect all" : "Select all";
+          render(rawItems);
+        });
+      });
+
+      setTypeSummary();
+
+      buildMultiPicker({
+        items: Array.from(new Set(items.flatMap(i => splitMultiValue(i.components)))).sort(),
+        boxId: "componentOptions",
+        summaryId: "componentSummary",
+        allId: "componentAll",
+        optClass: "component-opt",
+        toggleId: "componentToggleAllBtn",
+        searchId: "componentSearch",
+        allText: "All components",
+        singular: "components",
+        modeKey: "components"
+      });
+      buildMultiPicker({
+        items: Array.from(new Set(items.flatMap(i => splitMultiValue(i.labels)))).sort(),
+        boxId: "labelOptions",
+        summaryId: "labelSummary",
+        allId: "labelAll",
+        optClass: "label-opt",
+        toggleId: "labelToggleAllBtn",
+        searchId: "labelSearch",
+        allText: "All labels",
+        singular: "labels",
+        modeKey: "labels"
+      });
+    }
+
+    function buildMultiPicker({ items, boxId, summaryId, allId, optClass, toggleId, searchId, allText, singular, modeKey }) {
+      const box = document.getElementById(boxId);
+      const previous = Array.from(document.querySelectorAll(`.${optClass}`)).filter(x => x.checked).map(x => x.value);
+      const mode = pickerModes[modeKey] || "all";
+      const checkedValues = mode === "exclude"
+        ? [...items]
+        : mode === "include"
+          ? previous.filter(v => items.includes(v))
+          : [];
+      box.innerHTML = `
+        <input id="${searchId}" class="picker-search" type="text" placeholder="Search ${singular}..." />
+        <div class="type-actions">
+          <button type="button" id="${toggleId}">${mode === "exclude" ? "Unselect all" : "Select all"}</button>
+        </div>
+        <input id="${allId}" type="checkbox" ${mode === "exclude" ? "checked" : ""} hidden>
+      ` + items.map(v => {
+        const checked = checkedValues.includes(v);
+        return `<label data-picker-item="${v.toLowerCase().replace(/"/g, "&quot;")}"><input class="${optClass}" type="checkbox" value="${v.replace(/"/g, "&quot;")}" ${checked ? "checked" : ""}> ${v}</label>`;
+      }).join("");
+      document.getElementById(toggleId).addEventListener("click", () => {
+        const nextExclude = pickerModes[modeKey] !== "exclude";
+        pickerModes[modeKey] = nextExclude ? "exclude" : "all";
+        document.getElementById(allId).checked = nextExclude;
+        document.querySelectorAll(`.${optClass}`).forEach(x => x.checked = nextExclude);
+        document.getElementById(toggleId).textContent = nextExclude ? "Unselect all" : "Select all";
+        setMultiSummary(summaryId, allId, optClass, allText, singular, modeKey);
+        render(rawItems);
+      });
+      document.querySelectorAll(`.${optClass}`).forEach(el => {
+        el.addEventListener("change", () => {
+          const all = Array.from(document.querySelectorAll(`.${optClass}`));
+          const selectedBefore = all.filter(x => x.checked).length + (el.checked ? -1 : 1);
+          if (pickerModes[modeKey] === "all" && el.checked) {
+            document.querySelectorAll(`.${optClass}`).forEach(x => {
+              if (x !== el) x.checked = false;
+            });
+            pickerModes[modeKey] = "include";
+          } else if (pickerModes[modeKey] === "exclude") {
+            pickerModes[modeKey] = "exclude";
+          } else if (selectedBefore === 0 && el.checked) {
+            document.querySelectorAll(`.${optClass}`).forEach(x => {
+              if (x !== el) x.checked = false;
+            });
+            pickerModes[modeKey] = "include";
+          }
+          const selected = all.filter(x => x.checked).length;
+          if (selected === 0) {
+            pickerModes[modeKey] = "all";
+          } else if (selected === all.length) {
+            pickerModes[modeKey] = "exclude";
+          } else if (pickerModes[modeKey] !== "exclude") {
+            pickerModes[modeKey] = "include";
+          }
+          document.getElementById(allId).checked = pickerModes[modeKey] === "exclude";
+          document.getElementById(toggleId).textContent = pickerModes[modeKey] === "exclude" ? "Unselect all" : "Select all";
+          setMultiSummary(summaryId, allId, optClass, allText, singular, modeKey);
+          render(rawItems);
+        });
+      });
+      document.getElementById(searchId).addEventListener("input", (ev) => {
+        const q = ev.target.value.trim().toLowerCase();
+        box.querySelectorAll("[data-picker-item]").forEach(row => {
+          row.style.display = !q || row.dataset.pickerItem.includes(q) ? "" : "none";
+        });
+      });
+      setMultiSummary(summaryId, allId, optClass, allText, singular, modeKey);
+    }
+
+    function rebuildTableStatusFilter(items) {
+      const statuses = Array.from(new Set(items.map(i => getCurrentStage(i) || "N/A"))).sort();
+      const sel = document.getElementById("tableStatusFilter");
+      const prev = tableState.status;
+      sel.innerHTML = `<option value="ALL">All statuses</option>` + statuses.map(s => `<option value="${s}">${formatStageLabel(s)}</option>`).join("");
+      tableState.status = statuses.includes(prev) ? prev : "ALL";
+      sel.value = tableState.status;
+    }
+
+    function dateCell(d) {
+      return d ? fmtDate(d) : "";
+    }
+
+    function getTableColumns() {
+      const staticCols = [
+        { key: "exclude", label: "Exclude" },
+        { key: "status", label: "Status" },
+        { key: "id", label: "Key" },
+        { key: "issueType", label: "Work<br>type" },
+        { key: "title", label: "Summary" }
+      ];
+      const stageCols = WORKFLOW_STAGES.map(s => ({ key: `stage:${s}`, label: s }));
+      const endCols = [
+        { key: "sysLeadWorking", label: "System lead<br>time" },
+        { key: "agingWipWorking", label: "Aging<br>WIP" },
+        { key: "components", label: "Components" },
+        { key: "labels", label: "Labels" },
+        { key: "resolution", label: "Resolution" },
+        { key: "parent", label: "Parent" }
+      ];
+      return [...staticCols, ...stageCols, ...endCols];
+    }
+
+    function getDefaultColumnWidth(key) {
+      if (key.startsWith("stage:")) return 112;
+      if (key === "sysLeadWorking") return 110;
+      if (key === "agingWipWorking") return 100;
+      if (key === "title") return 320;
+      if (key === "components" || key === "labels") return 180;
+      return tableColumnWidths[key] || null;
+    }
+
+    function columnWidthStyle(key) {
+      const width = tableColumnWidths[key] || getDefaultColumnWidth(key);
+      return width ? ` style="width:${width}px;min-width:${Math.max(56, width)}px;max-width:${width}px;"` : "";
+    }
+
+    function tableRowModel(i) {
+      const now = new Date();
+      const done = doneDate(i);
+      const row = {
+        excluded: excludedItemIds.has(i.id),
+        status: formatStageLabel(getCurrentStage(i) || "N/A"),
+        statusRaw: getCurrentStage(i) || "N/A",
+        id: i.id,
+        issueType: i.issueType,
+        title: i.title,
+        doneDate: done,
+        sysLeadWorking: workingDaysBetween(systemStartDate(i), done),
+        agingWipWorking: done ? null : workingDaysBetween(getStageEntryDate(i), now),
+        components: i.components,
+        labels: i.labels,
+        resolution: i.resolution,
+        parent: i.parent,
+        _raw: i
+      };
+      WORKFLOW_STAGES.forEach(s => {
+        row[`stage:${s}`] = i.dates[s] || null;
+      });
+      return row;
+    }
+
+    function renderTableHeader() {
+      const head = document.getElementById("itemsTableHeadRow");
+      const cols = getTableColumns();
+      head.innerHTML = cols.map(c => {
+        const label = c.key.startsWith("stage:") ? formatStageLabel(c.label) : c.label;
+        const sortAttr = c.key === "exclude" ? "" : ` data-sort="${c.key}"`;
+        const canResize = RESIZABLE_COLUMNS.has(c.key);
+        const className = `${c.key === "exclude" ? "no-sort " : ""}${canResize ? "resizable" : ""}`.trim();
+        const nowrapClass = ["exclude", "status", "id"].includes(c.key) ? " cell-nowrap" : "";
+        return `<th class="${className}${nowrapClass}" data-col="${c.key}"${sortAttr}${columnWidthStyle(c.key)}><div class="th-inner">${label}${canResize ? `<span class="col-resizer" data-col="${c.key}"></span>` : ""}</div></th>`;
+      }).join("");
+      bindTableColumnResize();
+    }
+
+    function sortRows(rows) {
+      const { sortKey, dir } = tableState;
+      return rows.sort((a, b) => {
+        const va = a[sortKey];
+        const vb = b[sortKey];
+        if (va === null || va === undefined || va === "") return 1;
+        if (vb === null || vb === undefined || vb === "") return -1;
+        if (va instanceof Date && vb instanceof Date) return (va - vb) * dir;
+        if (typeof va === "number" && typeof vb === "number") return (va - vb) * dir;
+        return String(va).localeCompare(String(vb), undefined, { sensitivity: "base", numeric: true }) * dir;
+      });
+    }
+
+    function renderItemsTable(items) {
+      const body = document.getElementById("itemsTableBody");
+      let rows = items.map(tableRowModel);
+
+      if (tableState.status !== "ALL") rows = rows.filter(r => r.statusRaw === tableState.status);
+
+      const q = tableState.query.trim().toLowerCase();
+      if (q) {
+        rows = rows.filter(r => {
+          const hay = [
+            r.status, r.id, r.issueType, r.title, r.components, r.labels, r.resolution, r.parent,
+            ...WORKFLOW_STAGES.map(s => dateCell(r[`stage:${s}`]))
+          ].join(" ").toLowerCase();
+          return hay.includes(q);
+        });
+      }
+
+      rows = sortRows(rows);
+      lastVisibleTableRows = rows.map(r => ({ ...r }));
+
+      body.innerHTML = rows.map(r => `
+        <tr class="${r.excluded ? "excluded-row" : ""}">
+          <td class="cell-nowrap"${columnWidthStyle("exclude")}><input class="exclude-item" data-id="${r.id}" type="checkbox" ${r.excluded ? "checked" : ""}></td>
+          <td class="cell-nowrap"${columnWidthStyle("status")}><span class="pill ${statusPillClass(r.statusRaw)}">${r.status}</span></td>
+          <td class="cell-nowrap"${columnWidthStyle("id")}><a href="${r._raw.link || "#"}" target="_blank">${r.id}</a></td>
+          <td${columnWidthStyle("issueType")}><span class="pill" style="${typePillStyle(r.issueType)}">${r.issueType}</span></td>
+          <td${columnWidthStyle("title")}>${r.title}</td>
+          ${WORKFLOW_STAGES.map(s => `<td${columnWidthStyle(`stage:${s}`)}>${dateCell(r[`stage:${s}`])}</td>`).join("")}
+          <td class="metric-td"${columnWidthStyle("sysLeadWorking")}>${r.sysLeadWorking === null || r.sysLeadWorking === undefined ? "" : `<span class="metric-cell ${leadMetricClass(r.sysLeadWorking)}">${r.sysLeadWorking}</span>`}</td>
+          <td class="metric-td"${columnWidthStyle("agingWipWorking")}>${r.agingWipWorking === null || r.agingWipWorking === undefined ? "" : `<span class="metric-cell ${leadMetricClass(r.agingWipWorking)}">${r.agingWipWorking}</span>`}</td>
+          <td${columnWidthStyle("components")}>${r.components || ""}</td>
+          <td${columnWidthStyle("labels")}>${r.labels || ""}</td>
+          <td${columnWidthStyle("resolution")}>${r.resolution || ""}</td>
+          <td${columnWidthStyle("parent")}>${r.parent ? `<a class="parent-link" href="${parentHref(r._raw)}" target="_blank" rel="noopener noreferrer">${r.parent}</a>` : ""}</td>
+        </tr>
+      `).join("");
+
+      document.getElementById("tableCount").textContent = `${rows.length} visible rows`;
+    }
+
+    function renderTableModal() {
+      document.getElementById("tableModalHeadRow").innerHTML = document.getElementById("itemsTableHeadRow").innerHTML;
+      document.getElementById("tableModalBody").innerHTML = document.getElementById("itemsTableBody").innerHTML;
+      document.getElementById("tableModalCount").textContent = document.getElementById("tableCount").textContent;
+      document.getElementById("tableModal").classList.add("open");
+      document.getElementById("tableModal").setAttribute("aria-hidden", "false");
+    }
+
+    function exportVisibleTableToXlsx() {
+      const cols = getTableColumns().filter(c => c.key !== "exclude");
+      const data = lastVisibleTableRows.map(r => {
+        const out = {};
+        cols.forEach(c => {
+          const header = c.key.startsWith("stage:") ? formatStageLabel(c.label) : String(c.label).replace(/<br>/g, " ");
+          let value = r[c.key];
+          if (c.key === "status") value = r.status;
+          else if (c.key === "id") value = r.id;
+          else if (c.key === "issueType") value = r.issueType;
+          else if (c.key === "title") value = r.title;
+          else if (c.key === "sysLeadWorking") value = r.sysLeadWorking ?? "";
+          else if (c.key === "agingWipWorking") value = r.agingWipWorking ?? "";
+          else if (c.key.startsWith("stage:")) value = dateCell(r[c.key]);
+          out[header] = value ?? "";
+        });
+        return out;
+      });
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Items");
+      XLSX.writeFile(wb, "flow-metrics-items-table.xlsx");
+    }
+
+    function bindTableColumnResize() {
+      const head = document.getElementById("itemsTableHeadRow");
+      head.querySelectorAll(".col-resizer").forEach(handle => {
+        handle.onmousedown = (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          const key = handle.dataset.col;
+          const th = handle.closest("th");
+          if (!key || !th) return;
+          const startX = ev.clientX;
+          const startWidth = th.getBoundingClientRect().width;
+
+          const onMove = (moveEv) => {
+            const next = Math.max(56, Math.round(startWidth + (moveEv.clientX - startX)));
+            tableColumnWidths[key] = next;
+            document.querySelectorAll(`[data-col="${CSS.escape(key)}"]`).forEach(cell => {
+              cell.style.width = `${next}px`;
+              cell.style.minWidth = `${next}px`;
+              cell.style.maxWidth = `${next}px`;
+            });
+          };
+          const onUp = () => {
+            window.removeEventListener("mousemove", onMove);
+            window.removeEventListener("mouseup", onUp);
+          };
+
+          window.addEventListener("mousemove", onMove);
+          window.addEventListener("mouseup", onUp);
+        };
+      });
+    }
+
+    function bindEvents() {
+      ["periodSelect", "pctSelect", "wipGranularity", "throughputBreakdownGranularity", "flowBalanceGranularity"].forEach(id => {
+        document.getElementById(id).addEventListener("change", () => render(rawItems));
+      });
+      document.getElementById("periodDetails").addEventListener("toggle", () => {
+        if (document.getElementById("periodDetails").open) syncPeriodSummary();
+      });
+      document.getElementById("periodDetails").addEventListener("click", (ev) => {
+        ev.stopPropagation();
+      });
+      document.querySelectorAll("#periodQuickOptions button").forEach(btn => {
+        btn.addEventListener("click", () => {
+          if (btn.dataset.period === "ALL") {
+            customPeriodRange = { start: "", end: "" };
+            document.getElementById("periodSelect").value = "ALL";
+            syncPeriodSummary();
+            render(rawItems);
+            return;
+          }
+          const range = startOfQuickPeriod(btn.dataset.period);
+          if (!range) return;
+          customPeriodRange = { start: fmtInputDate(range.start), end: fmtInputDate(range.end) };
+          document.getElementById("periodSelect").value = btn.dataset.period;
+          syncPeriodSummary();
+          render(rawItems);
+        });
+      });
+      document.getElementById("periodStartPrev").addEventListener("click", () => {
+        periodCalendarState.startView = addMonths(periodCalendarState.startView, -1);
+        renderPeriodCalendars();
+      });
+      document.getElementById("periodStartNext").addEventListener("click", () => {
+        periodCalendarState.startView = addMonths(periodCalendarState.startView, 1);
+        renderPeriodCalendars();
+      });
+      document.getElementById("periodEndPrev").addEventListener("click", () => {
+        periodCalendarState.endView = addMonths(periodCalendarState.endView, -1);
+        renderPeriodCalendars();
+      });
+      document.getElementById("periodEndNext").addEventListener("click", () => {
+        periodCalendarState.endView = addMonths(periodCalendarState.endView, 1);
+        renderPeriodCalendars();
+      });
+      document.getElementById("applyPeriodCustom").addEventListener("click", () => {
+        const start = customPeriodRange.start;
+        const end = customPeriodRange.end;
+        if (!start || !end) return;
+        customPeriodRange = start <= end ? { start, end } : { start: end, end: start };
+        document.getElementById("periodSelect").value = "CUSTOM";
+        syncPeriodSummary();
+        document.getElementById("periodDetails").removeAttribute("open");
+        render(rawItems);
+      });
+      document.getElementById("clearPeriodCustom").addEventListener("click", () => {
+        customPeriodRange = { start: "", end: "" };
+        document.getElementById("periodSelect").value = "ALL";
+        syncPeriodSummary();
+        document.getElementById("periodDetails").removeAttribute("open");
+        render(rawItems);
+      });
+      document.getElementById("darkModeToggle").addEventListener("change", (ev) => {
+        applyTheme(ev.target.checked);
+      });
+      document.getElementById("shuffleThoughts").addEventListener("click", () => {
+        thoughtsPool = shuffleArray(thoughtsPool);
+        paintThoughts();
+      });
+
+      document.addEventListener("click", (ev) => {
+        ["typeDetails", "componentDetails", "labelDetails", "periodDetails"].forEach(id => {
+          const details = document.getElementById(id);
+          if (details && !details.contains(ev.target)) details.removeAttribute("open");
+        });
+      });
+
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          const tab = btn.dataset.tab;
+          document.getElementById("dashboardTab").classList.toggle("active", tab === "dashboard");
+          document.getElementById("tableTab").classList.toggle("active", tab === "table");
+          document.getElementById("parentTab").classList.toggle("active", tab === "parent");
+          if (tab === "dashboard" || tab === "parent") {
+            setTimeout(resizeDashboardCharts, 10);
+          }
+        });
+      });
+
+      document.getElementById("tableSearch").addEventListener("input", (ev) => {
+        tableState.query = ev.target.value;
+        renderItemsTable(filteredForTable);
+      });
+      document.getElementById("tableStatusFilter").addEventListener("change", (ev) => {
+        tableState.status = ev.target.value;
+        renderItemsTable(filteredForTable);
+      });
+      document.querySelector("#parentTab thead").addEventListener("click", (ev) => {
+        const th = ev.target.closest("th[data-parent-sort]");
+        if (!th) return;
+        const key = th.dataset.parentSort;
+        if (parentTableState.sortKey === key) parentTableState.dir *= -1;
+        else {
+          parentTableState.sortKey = key;
+          parentTableState.dir = key === "parent" || key === "typesText" ? 1 : -1;
+        }
+        renderParentFocus(filteredForTable.filter(i => !!doneDate(i)));
+      });
+      document.getElementById("clearExclusionsBtn").addEventListener("click", () => {
+        excludedItemIds.clear();
+        render(rawItems);
+      });
+      document.getElementById("amplifyTableBtn").addEventListener("click", () => {
+        renderTableModal();
+      });
+      document.getElementById("downloadTableBtn").addEventListener("click", () => {
+        exportVisibleTableToXlsx();
+      });
+      document.getElementById("itemsTableBody").addEventListener("change", (ev) => {
+        const cb = ev.target.closest(".exclude-item");
+        if (!cb) return;
+        const id = cb.dataset.id;
+        if (!id) return;
+        if (cb.checked) excludedItemIds.add(id);
+        else excludedItemIds.delete(id);
+        render(rawItems);
+      });
+
+      document.getElementById("itemsTableHeadRow").addEventListener("click", (ev) => {
+        const th = ev.target.closest("th[data-sort]");
+        if (!th) return;
+        const key = th.dataset.sort;
+        if (tableState.sortKey === key) {
+          tableState.dir *= -1;
+        } else {
+          tableState.sortKey = key;
+          tableState.dir = 1;
+        }
+        renderItemsTable(filteredForTable);
+      });
+
+      document.getElementById("openCycleStats").addEventListener("click", () => {
+        document.getElementById("cycleModal").classList.add("open");
+        document.getElementById("cycleModal").setAttribute("aria-hidden", "false");
+      });
+      document.getElementById("openCfdStats").addEventListener("click", () => {
+        document.getElementById("cfdStatsModal").classList.add("open");
+        document.getElementById("cfdStatsModal").setAttribute("aria-hidden", "false");
+      });
+      document.getElementById("openAaHelp").addEventListener("click", () => {
+        document.getElementById("aaHelpModal").classList.add("open");
+        document.getElementById("aaHelpModal").setAttribute("aria-hidden", "false");
+      });
+      document.getElementById("openDefinitions").addEventListener("click", () => {
+        document.getElementById("definitionsModal").classList.add("open");
+        document.getElementById("definitionsModal").setAttribute("aria-hidden", "false");
+      });
+      const closeCycle = () => {
+        document.getElementById("cycleModal").classList.remove("open");
+        document.getElementById("cycleModal").setAttribute("aria-hidden", "true");
+      };
+      const closeDefinitions = () => {
+        document.getElementById("definitionsModal").classList.remove("open");
+        document.getElementById("definitionsModal").setAttribute("aria-hidden", "true");
+      };
+      const closeAaHelp = () => {
+        document.getElementById("aaHelpModal").classList.remove("open");
+        document.getElementById("aaHelpModal").setAttribute("aria-hidden", "true");
+      };
+      const closeCfdStats = () => {
+        document.getElementById("cfdStatsModal").classList.remove("open");
+        document.getElementById("cfdStatsModal").setAttribute("aria-hidden", "true");
+      };
+      document.getElementById("closeDefinitions").addEventListener("click", closeDefinitions);
+      document.getElementById("definitionsModal").addEventListener("click", (ev) => {
+        if (ev.target.id === "definitionsModal") closeDefinitions();
+      });
+      document.getElementById("closeAaHelp").addEventListener("click", closeAaHelp);
+      document.getElementById("aaHelpModal").addEventListener("click", (ev) => {
+        if (ev.target.id === "aaHelpModal") closeAaHelp();
+      });
+      document.getElementById("closeCfdStats").addEventListener("click", closeCfdStats);
+      document.getElementById("cfdStatsModal").addEventListener("click", (ev) => {
+        if (ev.target.id === "cfdStatsModal") closeCfdStats();
+      });
+      document.getElementById("closeCycleStats").addEventListener("click", closeCycle);
+      document.getElementById("cycleModal").addEventListener("click", (ev) => {
+        if (ev.target.id === "cycleModal") closeCycle();
+      });
+
+      const closeChartModal = () => {
+        document.getElementById("chartModal").classList.remove("open");
+        document.getElementById("chartModal").setAttribute("aria-hidden", "true");
+      };
+      document.getElementById("closeChartModal").addEventListener("click", closeChartModal);
+      document.getElementById("chartModal").addEventListener("click", (ev) => {
+        if (ev.target.id === "chartModal") closeChartModal();
+      });
+      document.querySelectorAll(".amplify-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const targetId = btn.dataset.target;
+          const title = btn.dataset.title || "Chart";
+          const source = document.getElementById(targetId);
+          if (!source || !source.data || !source.layout) return;
+          document.getElementById("chartModalTitle").textContent = title;
+          document.getElementById("chartModal").classList.add("open");
+          document.getElementById("chartModal").setAttribute("aria-hidden", "false");
+          const data = JSON.parse(JSON.stringify(source.data));
+          const layout = JSON.parse(JSON.stringify(source.layout));
+          layout.autosize = true;
+          layout.height = 700;
+          Plotly.newPlot("chartModalPlot", data, layout, { responsive: true, displayModeBar: true });
+        });
+      });
+
+      document.getElementById("cfdDoneZero").addEventListener("change", () => render(rawItems));
+
+      const closeItemModal = () => {
+        document.getElementById("itemModal").classList.remove("open");
+        document.getElementById("itemModal").setAttribute("aria-hidden", "true");
+      };
+      const closeTableModal = () => {
+        document.getElementById("tableModal").classList.remove("open");
+        document.getElementById("tableModal").setAttribute("aria-hidden", "true");
+      };
+      document.getElementById("closeItemModal").addEventListener("click", closeItemModal);
+      document.getElementById("itemModal").addEventListener("click", (ev) => {
+        if (ev.target.id === "itemModal") closeItemModal();
+      });
+      document.getElementById("closeTableModal").addEventListener("click", closeTableModal);
+      document.getElementById("tableModal").addEventListener("click", (ev) => {
+        if (ev.target.id === "tableModal") closeTableModal();
+      });
+      document.getElementById("itemModalBody").addEventListener("click", (ev) => {
+        const link = ev.target.closest(".see-in-table-link");
+        if (!link) return;
+        ev.preventDefault();
+        const id = link.dataset.id || "";
+        closeItemModal();
+        document.getElementById("tabTable").click();
+        document.getElementById("tableSearch").value = id;
+        tableState.query = id;
+        renderItemsTable(filteredForTable);
+      });
+
+      window.addEventListener("resize", () => {
+        if (document.getElementById("dashboardTab").classList.contains("active")) {
+          resizeDashboardCharts();
+        }
+      });
+
+      document.addEventListener("keydown", (ev) => {
+        if (ev.key === "Escape") {
+          closeDefinitions();
+          closeAaHelp();
+          closeCfdStats();
+          closeCycle();
+          closeChartModal();
+          closeItemModal();
+          closeTableModal();
+        }
+      });
+
+      document.getElementById("fileInput").addEventListener("change", async (ev) => {
+        const file = ev.target.files[0];
+        if (!file) return;
+        const name = file.name.toLowerCase();
+        try {
+          let rows = [];
+          if (name.endsWith(".csv")) {
+            const text = await file.text();
+            const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+            rows = parsed.data;
+          } else {
+            const buf = await file.arrayBuffer();
+            const wb = XLSX.read(buf, { type: "array", cellDates: true });
+            const sheet = wb.Sheets[wb.SheetNames[0]];
+            rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+          }
+          deriveSchema(rows);
+          rawItems = rows.map(toItem).filter(i => i.id);
+          excludedItemIds.clear();
+          rebuildFilters(rawItems);
+          render(rawItems);
+        } catch (e) {
+          alert(`Failed to read file: ${e.message}`);
+        }
+      });
+    }
+
+    async function loadDefaultCsv() {
+      try {
+        const res = await fetch("./20260218-data.csv");
+        if (!res.ok) throw new Error("sample file not found");
+        const text = await res.text();
+        const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+        deriveSchema(parsed.data);
+        rawItems = parsed.data.map(toItem).filter(i => i.id);
+        excludedItemIds.clear();
+        rebuildFilters(rawItems);
+        render(rawItems);
+      } catch (err) {
+        document.getElementById("quickInfo").textContent = "Upload a CSV/XLSX to start.";
+      }
+    }
+
+    applyTheme(localStorage.getItem("flow_metrics_dark_mode") === "1");
+    bindEvents();
+    loadDefaultCsv();
+  </script>
+</body>
+</html>
