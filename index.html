@@ -23,7 +23,7 @@
   --border:#e5e5e5;--border-d:#d4d4d4;
   --shadow:0 2px 0 #d4d4d4;--shadow-lg:0 4px 12px rgba(0,0,0,.1);
   /* nav */
-  --nav-h:72px;
+  --nav-h:64px;
   --top-h:56px;
 }
 html,body{height:100%;height:100dvh;overflow:hidden}
@@ -110,9 +110,9 @@ body{
   content:'';position:absolute;top:0;left:20%;right:20%;
   height:3px;background:var(--green);border-radius:0 0 3px 3px;
 }
-.nav-ico{font-size:24px;line-height:1;transition:transform .15s}
+.nav-ico{font-size:20px;line-height:1;transition:transform .15s}
 .nav-btn.active .nav-ico{transform:scale(1.1)}
-.nav-lbl{font-size:10px;font-weight:800;letter-spacing:.3px}
+.nav-lbl{font-size:9px;font-weight:800;letter-spacing:.2px}
 
 /* ═══════════════════════════
    FLASHCARDS TAB
@@ -840,6 +840,24 @@ body.dark .wq-item, body.dark .struct-item { background: var(--border) }
   /* Mode pills row takes full width, dir+buttons on second row */
   .fc-topbar > .seg:first-child{flex:1}
 }
+
+.type-result.partial{background:var(--gold-bg);color:var(--gold-d)}
+.type-self-assess{display:none;width:100%;flex-direction:column;gap:8px}
+.type-self-assess.show{display:flex}
+.type-self-label{font-size:13px;font-weight:700;color:var(--text-soft);text-align:center}
+.type-assess-row{display:flex;gap:8px;width:100%}
+.assess-btn{
+  flex:1;padding:14px 8px;border-radius:14px;border:none;cursor:pointer;
+  font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;
+  transition:all .15s;box-shadow:0 2px 0;
+}
+.assess-btn:active{transform:translateY(2px);box-shadow:none}
+.assess-wrong{background:var(--red-bg);color:var(--red-d);box-shadow-color:var(--red-d)}
+.assess-wrong:active,.assess-wrong:hover{background:var(--red);color:white}
+.assess-partial{background:var(--gold-bg);color:var(--gold-d);box-shadow:0 2px 0 var(--gold-d)}
+.assess-partial:active,.assess-partial:hover{background:var(--gold);color:#333}
+.assess-right{background:var(--green-bg);color:var(--green-d);box-shadow:0 2px 0 var(--green-d)}
+.assess-right:active,.assess-right:hover{background:var(--green);color:white}
 </style>
 </head>
 <body>
@@ -1053,6 +1071,15 @@ body.dark .wq-item, body.dark .struct-item { background: var(--border) }
       <input class="type-input" id="typeInput" type="text" placeholder="Antwort eingeben..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
       <div class="type-result" id="typeResult"></div>
       <button class="type-submit" id="typeSubmitBtn" onclick="submitTypeAnswer()">Überprüfen ✓</button>
+      <!-- self-assessment row (shown after reveal) -->
+      <div class="type-self-assess" id="typeSelfAssess">
+        <div class="type-self-label">Como foi? Avalia tu mesmo:</div>
+        <div class="type-assess-row">
+          <button class="assess-btn assess-wrong" onclick="typeAssess(1)">✗<br><span style="font-size:11px">Não sabia</span></button>
+          <button class="assess-btn assess-partial" onclick="typeAssess(3)">〜<br><span style="font-size:11px">Quase</span></button>
+          <button class="assess-btn assess-right" onclick="typeAssess(5)">✓<br><span style="font-size:11px">Sabia</span></button>
+        </div>
+      </div>
       <div style="display:flex;gap:8px;width:100%">
         <button class="type-skip" onclick="skipTypeCard()">Überspringen →</button>
         <button class="type-submit" id="typeNextBtn" onclick="nextTypeCard()" style="display:none;flex:1;background:var(--green);box-shadow:0 3px 0 var(--green-d)">Weiter →</button>
@@ -1365,6 +1392,115 @@ body.dark .wq-item, body.dark .struct-item { background: var(--border) }
     </div>
   </div>
 
+  <!-- Possessivpronomen -->
+  <div class="cs-card">
+    <div class="cs-card-title">Possessivpronomen — Pronomes Possessivos</div>
+    <div style="overflow-x:auto;margin-bottom:14px">
+      <table class="art-table" style="min-width:380px;width:100%">
+        <tr><th>Person</th><th>Mask.</th><th>Fem.</th><th>Neutr.</th><th>Plural</th></tr>
+        <tr><td class="fall">ich</td><td class="c-m">mein</td><td class="c-f">meine</td><td class="c-n">mein</td><td class="c-p">meine</td></tr>
+        <tr><td class="fall">du</td><td class="c-m">dein</td><td class="c-f">deine</td><td class="c-n">dein</td><td class="c-p">deine</td></tr>
+        <tr><td class="fall">er/es</td><td class="c-m">sein</td><td class="c-f">seine</td><td class="c-n">sein</td><td class="c-p">seine</td></tr>
+        <tr><td class="fall">sie (Sg.)</td><td class="c-m">ihr</td><td class="c-f">ihre</td><td class="c-n">ihr</td><td class="c-p">ihre</td></tr>
+        <tr><td class="fall">wir</td><td class="c-m">unser</td><td class="c-f">unsere</td><td class="c-n">unser</td><td class="c-p">unsere</td></tr>
+        <tr><td class="fall">ihr</td><td class="c-m">euer</td><td class="c-f">eure</td><td class="c-n">euer</td><td class="c-p">eure</td></tr>
+        <tr><td class="fall">sie/Sie (Pl.)</td><td class="c-m">ihr/Ihr</td><td class="c-f">ihre/Ihre</td><td class="c-n">ihr/Ihr</td><td class="c-p">ihre/Ihre</td></tr>
+      </table>
+    </div>
+    <div style="font-size:11px;font-weight:800;color:var(--text-muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">Deklination: mein folgt kein</div>
+    <div style="overflow-x:auto;margin-bottom:12px">
+      <table class="art-table" style="min-width:320px;width:100%">
+        <tr><th>Fall</th><th style="color:#e05a2b">Mask.</th><th style="color:#46a302">Fem.</th><th style="color:#0a8fc7">Neutr.</th><th style="color:#9a3fd4">Plural</th></tr>
+        <tr><td class="fall">Nominativ</td><td>mein</td><td>meine</td><td>mein</td><td>meine</td></tr>
+        <tr><td class="fall">Akkusativ</td><td>meinen</td><td>meine</td><td>mein</td><td>meine</td></tr>
+        <tr><td class="fall">Dativ</td><td>meinem</td><td>meiner</td><td>meinem</td><td>meinen</td></tr>
+        <tr><td class="fall">Genitiv</td><td>meines</td><td>meiner</td><td>meines</td><td>meiner</td></tr>
+      </table>
+    </div>
+    <div class="tip">&#128161; Alle Possessivpronomen folgen dem gleichen Muster wie <strong>kein/keine</strong></div>
+    <div style="display:flex;flex-direction:column;gap:5px;margin-top:12px">
+      <div class="phrase-row"><span class="ph-de">Das ist <strong>mein</strong> Buch.</span><span class="ph-pt">Este e o meu livro. (Nom.)</span></div>
+      <div class="phrase-row"><span class="ph-de">Ich sehe <strong>seinen</strong> Hund.</span><span class="ph-pt">Vejo o cao dele. (Akk.)</span></div>
+      <div class="phrase-row"><span class="ph-de">Er hilft <strong>ihrer</strong> Mutter.</span><span class="ph-pt">Ele ajuda a mae dela. (Dat.)</span></div>
+      <div class="phrase-row"><span class="ph-de">Das ist <strong>unser</strong> Auto.</span><span class="ph-pt">Este e o nosso carro. (Nom.)</span></div>
+    </div>
+  </div>
+
+  <!-- Komparativ & Superlativ -->
+  <div class="cs-card">
+    <div class="cs-card-title">Komparativ &amp; Superlativ</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:14px;text-align:center">
+      <div style="background:var(--bg);border-radius:10px;padding:10px 4px">
+        <div style="font-size:10px;font-weight:800;color:var(--text-muted);letter-spacing:.5px;margin-bottom:5px">POSITIV</div>
+        <div style="font-family:DM Mono,monospace;font-size:14px;font-weight:700">schnell</div>
+        <div style="font-size:11px;color:var(--text-muted)">rapido</div>
+      </div>
+      <div style="background:var(--blue-bg);border-radius:10px;padding:10px 4px">
+        <div style="font-size:10px;font-weight:800;color:var(--blue-d);letter-spacing:.5px;margin-bottom:5px">KOMPARATIV</div>
+        <div style="font-family:DM Mono,monospace;font-size:14px;font-weight:700;color:var(--blue-d)">schneller</div>
+        <div style="font-size:11px;color:var(--blue-d)">mais rapido</div>
+      </div>
+      <div style="background:var(--green-bg);border-radius:10px;padding:10px 4px">
+        <div style="font-size:10px;font-weight:800;color:var(--green-d);letter-spacing:.5px;margin-bottom:5px">SUPERLATIV</div>
+        <div style="font-family:DM Mono,monospace;font-size:13px;font-weight:700;color:var(--green-d)">am schnellsten</div>
+        <div style="font-size:11px;color:var(--green-d)">o mais rapido</div>
+      </div>
+    </div>
+    <div style="font-size:11px;font-weight:800;color:var(--text-muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">Unregelmaessige Formen</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:12px;font-size:12px;text-align:center">
+      <div style="background:var(--bg);border-radius:8px;padding:7px 4px"><div style="font-weight:800">gut</div><div style="color:var(--text-muted);font-size:10px">bom</div></div>
+      <div style="background:var(--blue-bg);border-radius:8px;padding:7px 4px"><div style="font-weight:800;color:var(--blue-d)">besser</div><div style="font-size:10px;color:var(--blue-d)">melhor</div></div>
+      <div style="background:var(--green-bg);border-radius:8px;padding:7px 4px"><div style="font-weight:800;color:var(--green-d)">am besten</div><div style="font-size:10px;color:var(--green-d)">o melhor</div></div>
+      <div style="background:var(--bg);border-radius:8px;padding:7px 4px"><div style="font-weight:800">viel</div><div style="color:var(--text-muted);font-size:10px">muito</div></div>
+      <div style="background:var(--blue-bg);border-radius:8px;padding:7px 4px"><div style="font-weight:800;color:var(--blue-d)">mehr</div><div style="font-size:10px;color:var(--blue-d)">mais</div></div>
+      <div style="background:var(--green-bg);border-radius:8px;padding:7px 4px"><div style="font-weight:800;color:var(--green-d)">am meisten</div><div style="font-size:10px;color:var(--green-d)">o mais</div></div>
+      <div style="background:var(--bg);border-radius:8px;padding:7px 4px"><div style="font-weight:800">gern</div><div style="color:var(--text-muted);font-size:10px">com prazer</div></div>
+      <div style="background:var(--blue-bg);border-radius:8px;padding:7px 4px"><div style="font-weight:800;color:var(--blue-d)">lieber</div><div style="font-size:10px;color:var(--blue-d)">de preferencia</div></div>
+      <div style="background:var(--green-bg);border-radius:8px;padding:7px 4px"><div style="font-weight:800;color:var(--green-d)">am liebsten</div><div style="font-size:10px;color:var(--green-d)">o que mais gosta</div></div>
+      <div style="background:var(--bg);border-radius:8px;padding:7px 4px"><div style="font-weight:800">gross</div><div style="color:var(--text-muted);font-size:10px">grande</div></div>
+      <div style="background:var(--blue-bg);border-radius:8px;padding:7px 4px"><div style="font-weight:800;color:var(--blue-d)">groesser</div><div style="font-size:10px;color:var(--blue-d)">maior</div></div>
+      <div style="background:var(--green-bg);border-radius:8px;padding:7px 4px"><div style="font-weight:800;color:var(--green-d)">am groessten</div><div style="font-size:10px;color:var(--green-d)">o maior</div></div>
+    </div>
+    <div class="tip">&#9888;&#65039; Kurze Adjektive bekommen oft Umlaut: alt&#8594;<strong>ae</strong>lter, jung&#8594;<strong>jue</strong>nger, kalt&#8594;<strong>kae</strong>lter</div>
+    <div style="display:flex;flex-direction:column;gap:5px;margin-top:10px">
+      <div class="phrase-row"><span class="ph-de">Er ist <strong>groesser als</strong> sie.</span><span class="ph-pt">Ele e mais alto do que ela.</span></div>
+      <div class="phrase-row"><span class="ph-de">Das ist <strong>so teuer wie</strong> das andere.</span><span class="ph-pt">E tao caro quanto o outro.</span></div>
+      <div class="phrase-row"><span class="ph-de">Ich laufe <strong>am schnellsten</strong>.</span><span class="ph-pt">Eu corro mais rapido de todos.</span></div>
+    </div>
+  </div>
+
+  <!-- Konjunktiv II -->
+  <div class="cs-card">
+    <div class="cs-card-title">Konjunktiv II — Condicional</div>
+    <div style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:12px">Para desejos, hipoteses, pedidos educados e condicoes irreais.</div>
+    <div style="font-size:11px;font-weight:800;color:var(--text-muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">wuerden + Infinitiv (forma mais comum)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:12px">
+      <div class="pro-row"><span class="pro-de">ich</span><span style="font-family:DM Mono,monospace;font-size:12px;font-weight:700;color:var(--blue-d)">wuerde</span></div>
+      <div class="pro-row"><span class="pro-de">wir</span><span style="font-family:DM Mono,monospace;font-size:12px;font-weight:700;color:var(--blue-d)">wuerden</span></div>
+      <div class="pro-row"><span class="pro-de">du</span><span style="font-family:DM Mono,monospace;font-size:12px;font-weight:700;color:var(--blue-d)">wuerdest</span></div>
+      <div class="pro-row"><span class="pro-de">ihr</span><span style="font-family:DM Mono,monospace;font-size:12px;font-weight:700;color:var(--blue-d)">wuerdet</span></div>
+      <div class="pro-row"><span class="pro-de">er/sie/es</span><span style="font-family:DM Mono,monospace;font-size:12px;font-weight:700;color:var(--blue-d)">wuerde</span></div>
+      <div class="pro-row"><span class="pro-de">sie/Sie</span><span style="font-family:DM Mono,monospace;font-size:12px;font-weight:700;color:var(--blue-d)">wuerden</span></div>
+    </div>
+    <div style="font-size:11px;font-weight:800;color:var(--text-muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">Wichtige unregelmaessige Formen</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:12px">
+      <div class="pro-row"><span class="pro-de">sein</span><span style="font-family:DM Mono,monospace;font-size:12px;font-weight:700;color:var(--red-d)">waere</span></div>
+      <div class="pro-row"><span class="pro-de">haben</span><span style="font-family:DM Mono,monospace;font-size:12px;font-weight:700;color:var(--red-d)">haette</span></div>
+      <div class="pro-row"><span class="pro-de">koennen</span><span style="font-family:DM Mono,monospace;font-size:12px;font-weight:700;color:var(--red-d)">koennte</span></div>
+      <div class="pro-row"><span class="pro-de">muessen</span><span style="font-family:DM Mono,monospace;font-size:12px;font-weight:700;color:var(--red-d)">muesste</span></div>
+      <div class="pro-row"><span class="pro-de">duerfen</span><span style="font-family:DM Mono,monospace;font-size:12px;font-weight:700;color:var(--red-d)">duerfte</span></div>
+      <div class="pro-row"><span class="pro-de">wollen</span><span style="font-family:DM Mono,monospace;font-size:12px;font-weight:700;color:var(--red-d)">wollte</span></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <div class="phrase-row"><span class="ph-de">Ich <strong>wuerde</strong> gern reisen.</span><span class="ph-pt">Eu gostaria de viajar.</span></div>
+      <div class="phrase-row"><span class="ph-de">Das <strong>waere</strong> schoen.</span><span class="ph-pt">Isso seria bonito.</span></div>
+      <div class="phrase-row"><span class="ph-de">Ich <strong>haette</strong> gern einen Kaffee.</span><span class="ph-pt">Eu gostaria de um cafe.</span></div>
+      <div class="phrase-row"><span class="ph-de"><strong>Koenntest</strong> du mir helfen?</span><span class="ph-pt">Poderias ajudar-me?</span></div>
+      <div class="phrase-row"><span class="ph-de">Wenn ich Zeit <strong>haette</strong>, kaeme ich.</span><span class="ph-pt">Se eu tivesse tempo, viria.</span></div>
+    </div>
+  </div>
+
+
 </div>
 </div><!-- /cheatsheet -->
 
@@ -1387,6 +1523,9 @@ body.dark .wq-item, body.dark .struct-item { background: var(--border) }
   </button>
   <button class="nav-btn" onclick="switchTab('words')" id="bnav-words">
     <span class="nav-ico">📚</span><span class="nav-lbl">Wörter</span>
+  </button>
+  <button class="nav-btn" onclick="switchTab('cheatsheet')" id="bnav-cheatsheet">
+    <span class="nav-ico">📋</span><span class="nav-lbl">Spickzettel</span>
   </button>
 </nav>
 
@@ -1947,7 +2086,25 @@ function getNewCards(limit=10){
   return ALL_CARDS.filter(c=>!P.srs[c.id]).slice(0,limit);
 }
 
+function recordResultQuality(id,quality){
+  // quality: 1=wrong, 3=quase, 5=right
+  if(!P.history[id])P.history[id]=[];
+  const knew=quality>=3;
+  P.history[id].unshift({r:quality===5?'knew':quality===3?'partial':'wrong',ts:Date.now()});
+  if(P.history[id].length>5)P.history[id].pop();
+  const card=ALL_CARDS.find(c=>c.id===id);
+  if(card) sm2(card,quality);
+  if(knew){P.totalKnew++;P.streak++;if(P.streak>P.bestStreak)P.bestStreak=P.streak;}
+  else{P.totalWrong++;P.streak=0;}
+  const today=new Date().toDateString();
+  if(P.lastStudyDate!==today){P.lastStudyDate=today;P.dailyDone=0;}
+  P.dailyDone++;
+  saveP();updateTopbar();
+}
 function recordResult(id,knew){
+  recordResultQuality(id,knew?5:1);
+}
+function _recordResultOld(id,knew){
   if(!P.history[id])P.history[id]=[];
   P.history[id].unshift({r:knew?'knew':'wrong',ts:Date.now()});
   if(P.history[id].length>5)P.history[id].pop();
@@ -1968,7 +2125,7 @@ function setKnown(id,v){
   saveP();updateTopbar();
 }
 function isKnown(id){return !!P.known[id];}
-function histHTML(id){return(P.history[id]||[]).slice(0,5).map(h=>`<div class="hd" style="background:${h.r==='knew'?'var(--green)':'var(--red)'}"></div>`).join('');}
+function histHTML(id){return(P.history[id]||[]).slice(0,5).map(h=>`<div class="hd" style="background:${h.r==='knew'?'var(--green)':h.r==='partial'?'var(--gold)':'var(--red)'}"></div>`).join('');}
 function updateTopbar(){
   const tk=Object.keys(P.known).length;
   document.getElementById('tbKnown').textContent=tk;
@@ -2366,9 +2523,9 @@ function showQuizEnd(){
 function restartQuiz(){fcDeck=shuffleArr(buildFCDeck(fcCat));startQuizMode();}
 
 // ── TYPE THE ANSWER ──
-let fcTypeIdx=0,fcTypeSessRight=0,fcTypeSessWrong=0,fcTypeAnswered=false;
+let fcTypeIdx=0,fcTypeSessRight=0,fcTypeSessWrong=0,fcTypeSessPartial=0,fcTypeAnswered=false;
 function startTypeMode(){
-  fcTypeIdx=0;fcTypeSessRight=0;fcTypeSessWrong=0;
+  fcTypeIdx=0;fcTypeSessRight=0;fcTypeSessWrong=0;fcTypeSessPartial=0;
   document.getElementById('fcTypeEnd').classList.remove('show');
   document.getElementById('fcTypeEnd').style.display='none';
   document.getElementById('fcTypeArea').querySelector('.type-answer-wrap').style.display='flex';
@@ -2407,15 +2564,33 @@ function submitTypeAnswer(){
   inp.className='type-input '+(ok?'correct':'wrong');
   inp.disabled=true;
   const res=document.getElementById('typeResult');
+  document.getElementById('typeSubmitBtn').style.display='none';
   if(ok){
     res.textContent='✓ Richtig!';res.className='type-result show ok';
+    // exact match → no need to self-assess, record directly as quality 5
+    recordResultQuality(card.id,5);
+    fcTypeSessRight++;
+    document.getElementById('typeNextBtn').style.display='block';
   } else {
     res.innerHTML=`✗ Richtige Antwort: <strong>${correct}</strong>`;
     res.className='type-result show bad';
+    // show self-assessment row so user can say "quase" or "não sabia"
+    document.getElementById('typeSelfAssess').classList.add('show');
   }
-  recordResult(card.id,ok);
-  if(ok)fcTypeSessRight++;else fcTypeSessWrong++;
-  document.getElementById('typeSubmitBtn').style.display='none';
+}
+function typeAssess(quality){
+  // called after wrong answer with self-assessment
+  const card=fcDeck[fcTypeIdx];
+  recordResultQuality(card.id,quality);
+  document.getElementById('typeSelfAssess').classList.remove('show');
+  if(quality===1){
+    fcTypeSessWrong++;
+  } else if(quality===3){
+    // "quase" counts as half-right for session display
+    fcTypeSessPartial=(fcTypeSessPartial||0)+1;
+  } else {
+    fcTypeSessRight++;
+  }
   document.getElementById('typeNextBtn').style.display='block';
 }
 function nextTypeCard(){
@@ -2437,7 +2612,8 @@ function showTypeEnd(){
   const end=document.getElementById('fcTypeEnd');
   end.style.display='flex';end.classList.add('show');
   const tot=fcTypeSessRight+fcTypeSessWrong,pct=tot>0?Math.round(fcTypeSessRight/tot*100):0;
-  document.getElementById('fcTypeScore').innerHTML=`✓ <strong>${fcTypeSessRight}</strong> richtig · ✗ <strong>${fcTypeSessWrong}</strong> falsch<br>${pct}%`;
+  const partialStr=fcTypeSessPartial>0?` · 〜 <strong>${fcTypeSessPartial}</strong> fast`:'';
+  document.getElementById('fcTypeScore').innerHTML=`✓ <strong>${fcTypeSessRight}</strong> richtig${partialStr} · ✗ <strong>${fcTypeSessWrong}</strong> falsch<br>${pct}%`;
   if(typeof refreshHome==='function')refreshHome();
 }
 function restartType(){fcDeck=shuffleArr(buildFCDeck(fcCat));startTypeMode();}
