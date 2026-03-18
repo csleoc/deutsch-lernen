@@ -119,14 +119,15 @@ body{
 
 /* mode / dir row */
 .fc-topbar{
-  padding:10px 14px 8px;background:var(--white);
+  padding:8px 12px 6px;background:var(--white);
   border-bottom:2px solid var(--border);
-  display:flex;align-items:center;gap:8px;flex-shrink:0;
+  display:flex;align-items:center;gap:6px;flex-shrink:0;
+  flex-wrap:wrap;
 }
 .seg{display:flex;background:var(--bg);border-radius:10px;padding:3px;gap:2px}
 .seg-btn{
-  padding:7px 14px;border-radius:8px;border:none;background:transparent;
-  font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;
+  padding:7px 10px;border-radius:8px;border:none;background:transparent;
+  font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;
   color:var(--text-muted);cursor:pointer;transition:all .15s;white-space:nowrap;
 }
 .seg-btn.active{background:var(--white);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.12)}
@@ -139,9 +140,9 @@ body{
 }
 .icon-btn:active{transform:scale(.92)}
 .known-btn{
-  padding:7px 12px;border-radius:10px;border:2px solid var(--green);
+  padding:6px 10px;border-radius:10px;border:2px solid var(--green);
   background:var(--green-bg);color:var(--green-d);cursor:pointer;
-  font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;
+  font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;
   white-space:nowrap;transition:all .12s;
 }
 .known-btn.off{border-color:var(--border-d);background:var(--white);color:var(--text-muted)}
@@ -297,7 +298,7 @@ body{
 .end-btn.secondary{background:var(--white);border:2px solid var(--border-d);color:var(--text)}
 
 /* QUIZ */
-.quiz-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 14px}
+.quiz-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 14px 120px}
 .quiz-q{
   background:var(--white);border-radius:20px;padding:36px 20px 20px;
   text-align:center;position:relative;margin-bottom:14px;
@@ -344,6 +345,7 @@ body{
   font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;
   cursor:pointer;display:none;transition:all .15s;
   box-shadow:0 3px 0 var(--blue-d);
+  position:sticky;bottom:16px;
 }
 .quiz-next.show{display:block}
 .quiz-next:active{transform:translateY(2px);box-shadow:none}
@@ -826,6 +828,17 @@ body.dark .num-item { background: var(--border) }
 body.dark .pro-row, body.dark .day-row, body.dark .phrase-row,
 body.dark .neg-row, body.dark .case-box, body.dark .daily-stat,
 body.dark .wq-item, body.dark .struct-item { background: var(--border) }
+
+/* ── MOBILE TOOLBAR FIXES ── */
+@media(max-width:480px){
+  .fc-topbar{padding:6px 10px 4px;gap:4px}
+  .seg{padding:2px;gap:1px}
+  .seg-btn{padding:6px 8px;font-size:11px}
+  .known-btn{padding:5px 8px;font-size:10px}
+  .icon-btn{width:32px;height:32px;font-size:14px}
+  /* Mode pills row takes full width, dir+buttons on second row */
+  .fc-topbar > .seg:first-child{flex:1}
+}
 </style>
 </head>
 <body>
@@ -1061,9 +1074,12 @@ body.dark .wq-item, body.dark .struct-item { background: var(--border) }
 <!-- ═══ GRAMMATIK ═══ -->
 <div class="tab-panel" id="panel-grammar">
   <div class="grammar-tab" style="display:flex;flex-direction:column;height:100%">
-    <div style="padding:12px 16px;background:var(--white);border-bottom:2px solid var(--border);flex-shrink:0">
-      <div style="font-size:20px;font-weight:900;margin-bottom:2px">✏️ Grammatikübungen</div>
-      <div style="font-size:13px;font-weight:600;color:var(--text-muted)">Wähle den richtigen Artikel oder Fall</div>
+    <div style="padding:12px 16px;background:var(--white);border-bottom:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <div>
+        <div style="font-size:20px;font-weight:900;margin-bottom:2px">✏️ Grammatik</div>
+        <div style="font-size:12px;font-weight:600;color:var(--text-muted)" id="grammarSubtitle">20 zufällige Übungen aus 150</div>
+      </div>
+      <button onclick="resetGrammar()" style="flex-shrink:0;padding:8px 14px;border-radius:12px;border:2px solid var(--blue);background:var(--blue-bg);color:var(--blue-d);font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer">🔀 Neu</button>
     </div>
     <div class="grammar-scroll" id="grammarScroll"></div>
   </div>
@@ -1674,68 +1690,205 @@ const TEXTS = [
  g:[["fristgerecht","dentro do prazo"],["bereichernd","enriquecedor"],["die Übergabe","a passagem de pasta"],["einarbeiten","integrar"],["das Arbeitsverhältnis","o vínculo empregatício"]]}
 ];
 
-const GRAMMAR_EX = [
-// ── NOMINATIV vs AKKUSATIV ──
-{section:'Nominativ vs. Akkusativ',id:'g1',sentence:'___ Mann schläft.',opts:['der','den','dem','des'],correct:'der',explain:'Nominativ Maskulin: der'},
-{section:'Nominativ vs. Akkusativ',id:'g2',sentence:'Ich sehe ___ Mann.',opts:['der','den','dem','des'],correct:'den',explain:'Akkusativ Maskulin: den'},
-{section:'Nominativ vs. Akkusativ',id:'g3',sentence:'___ Frau kocht.',opts:['die','der','dem','den'],correct:'die',explain:'Nominativ Feminin: die'},
-{section:'Nominativ vs. Akkusativ',id:'g4',sentence:'Er kauft ___ Buch.',opts:['das','dem','der','den'],correct:'das',explain:'Akkusativ Neutrum: das (gleich wie Nominativ)'},
-{section:'Nominativ vs. Akkusativ',id:'g5',sentence:'___ Kind spielt.',opts:['das','dem','den','des'],correct:'das',explain:'Nominativ Neutrum: das'},
-{section:'Nominativ vs. Akkusativ',id:'g6',sentence:'Sie liebt ___ Hund.',opts:['der','den','dem','das'],correct:'den',explain:'Akkusativ Maskulin: den'},
-{section:'Nominativ vs. Akkusativ',id:'g7',sentence:'___ Lehrer erklärt die Aufgabe.',opts:['der','den','dem','ein'],correct:'der',explain:'Nominativ Maskulin: der'},
-{section:'Nominativ vs. Akkusativ',id:'g8',sentence:'Wir besuchen ___ Freund.',opts:['der','den','dem','ein'],correct:'den',explain:'Akkusativ Maskulin: den'},
-{section:'Nominativ vs. Akkusativ',id:'g9',sentence:'___ Tisch ist neu.',opts:['der','den','dem','das'],correct:'der',explain:'Nominativ Maskulin: der'},
-{section:'Nominativ vs. Akkusativ',id:'g10',sentence:'Ich kaufe ___ Tisch.',opts:['der','den','dem','das'],correct:'den',explain:'Akkusativ Maskulin: den'},
-// ── DATIV ──
-{section:'Dativ',id:'g11',sentence:'Ich helfe ___ Mann.',opts:['der','den','dem','des'],correct:'dem',explain:'Dativ Maskulin: dem'},
-{section:'Dativ',id:'g12',sentence:'Er gibt ___ Frau das Buch.',opts:['die','der','dem','den'],correct:'der',explain:'Dativ Feminin: der'},
-{section:'Dativ',id:'g13',sentence:'Sie schreibt ___ Kind.',opts:['das','den','der','dem'],correct:'dem',explain:'Dativ Neutrum: dem'},
-{section:'Dativ',id:'g14',sentence:'Ich wohne in ___ Stadt.',opts:['die','der','dem','das'],correct:'der',explain:'in + Dativ Feminin: der Stadt'},
-{section:'Dativ',id:'g15',sentence:'Er fährt mit ___ Zug.',opts:['der','den','dem','das'],correct:'dem',explain:'mit + Dativ Maskulin: dem Zug'},
-{section:'Dativ',id:'g16',sentence:'Sie kommt aus ___ Schweiz.',opts:['die','der','dem','das'],correct:'der',explain:'aus + Dativ Feminin: der Schweiz'},
-{section:'Dativ',id:'g17',sentence:'Wir gehen zu ___ Arzt.',opts:['der','den','dem','das'],correct:'dem',explain:'zu + Dativ Maskulin: dem Arzt'},
-{section:'Dativ',id:'g18',sentence:'Das Buch gehört ___ Lehrerin.',opts:['die','der','dem','den'],correct:'der',explain:'Dativ Feminin: der Lehrerin'},
-// ── UNBESTIMMTER ARTIKEL ──
-{section:'Unbestimmter Artikel',id:'g19',sentence:'Das ist ___ Tisch.',opts:['ein','eine','einen','einem'],correct:'ein',explain:'Nominativ Maskulin unbestimmt: ein'},
-{section:'Unbestimmter Artikel',id:'g20',sentence:'Ich kaufe ___ Lampe.',opts:['ein','eine','einen','einem'],correct:'eine',explain:'Akkusativ Feminin unbestimmt: eine'},
-{section:'Unbestimmter Artikel',id:'g21',sentence:'Er hilft ___ Freund.',opts:['ein','einen','einem','eines'],correct:'einem',explain:'Dativ Maskulin unbestimmt: einem'},
-{section:'Unbestimmter Artikel',id:'g22',sentence:'Sie hat ___ neues Auto.',opts:['ein','eine','einen','einem'],correct:'ein',explain:'Akkusativ Neutrum unbestimmt: ein'},
-{section:'Unbestimmter Artikel',id:'g23',sentence:'Das ist ___ gute Idee.',opts:['ein','eine','einen','einem'],correct:'eine',explain:'Nominativ Feminin unbestimmt: eine'},
-// ── NEGATION ──
-{section:'Negation: nicht vs. kein',id:'g24',sentence:'Ich habe ___ Auto.',opts:['nicht','kein','keine','keinen'],correct:'kein',explain:'Vor Substantiv Neutrum (das Auto): kein'},
-{section:'Negation: nicht vs. kein',id:'g25',sentence:'Sie wohnt ___ in Hamburg.',opts:['nicht','kein','keine','keinen'],correct:'nicht',explain:'Vor Verben und Adverbien: nicht'},
-{section:'Negation: nicht vs. kein',id:'g26',sentence:'Er hat ___ Zeit.',opts:['nicht','kein','keine','keinen'],correct:'keine',explain:'Vor Substantiv Feminin (die Zeit): keine'},
-{section:'Negation: nicht vs. kein',id:'g27',sentence:'Ich kenne ___ Arzt hier.',opts:['nicht','kein','keinen','keine'],correct:'keinen',explain:'Vor Substantiv Maskulin Akkusativ: keinen'},
-{section:'Negation: nicht vs. kein',id:'g28',sentence:'Das ist ___ richtig.',opts:['nicht','kein','keine','keinen'],correct:'nicht',explain:'Vor Adjektiven: nicht'},
-{section:'Negation: nicht vs. kein',id:'g29',sentence:'Wir haben ___ Milch.',opts:['nicht','kein','keine','keinen'],correct:'keine',explain:'Vor Substantiv Feminin (die Milch): keine'},
-{section:'Negation: nicht vs. kein',id:'g30',sentence:'Er kommt ___ heute.',opts:['nicht','kein','keine','keinen'],correct:'nicht',explain:'Vor Zeitadverbien: nicht'},
-// ── SEIN & HABEN ──
-{section:'Verben: sein & haben',id:'g31',sentence:'Wir ___ Studenten.',opts:['bin','bist','ist','sind'],correct:'sind',explain:'wir → sind'},
-{section:'Verben: sein & haben',id:'g32',sentence:'Du ___ sehr nett.',opts:['bin','bist','ist','sind'],correct:'bist',explain:'du → bist'},
-{section:'Verben: sein & haben',id:'g33',sentence:'Er ___ ein Auto.',opts:['habe','hast','hat','haben'],correct:'hat',explain:'er/sie/es → hat'},
-{section:'Verben: sein & haben',id:'g34',sentence:'Ich ___ Hunger.',opts:['habe','hast','hat','haben'],correct:'habe',explain:'ich → habe'},
-{section:'Verben: sein & haben',id:'g35',sentence:'Ihr ___ müde.',opts:['bin','bist','seid','sind'],correct:'seid',explain:'ihr → seid'},
-{section:'Verben: sein & haben',id:'g36',sentence:'Sie (Pl.) ___ keine Zeit.',opts:['habe','hast','hat','haben'],correct:'haben',explain:'sie (Plural) → haben'},
-// ── MODALVERBEN ──
-{section:'Modalverben',id:'g37',sentence:'Ich ___ Deutsch sprechen.',opts:['kann','kannst','könnt','können'],correct:'kann',explain:'ich + können → kann'},
-{section:'Modalverben',id:'g38',sentence:'Du ___ mehr schlafen.',opts:['musst','muss','müsst','müssen'],correct:'musst',explain:'du + müssen → musst'},
-{section:'Modalverben',id:'g39',sentence:'Er ___ nach Berlin fahren.',opts:['will','willst','wollt','wollen'],correct:'will',explain:'er/sie/es + wollen → will'},
-{section:'Modalverben',id:'g40',sentence:'Wir ___ heute lernen.',opts:['soll','sollst','sollte','sollen'],correct:'sollen',explain:'wir + sollen → sollen'},
-{section:'Modalverben',id:'g41',sentence:'Darf ich ___ gehen?',opts:['darf','darfst','dürfen','dürft'],correct:'dürfen',explain:'Infinitiv am Ende: dürfen'},
-{section:'Modalverben',id:'g42',sentence:'Sie ___ nicht so laut sein.',opts:['darf','darfst','dürfen','dürft'],correct:'darf',explain:'sie (Sg.) + dürfen → darf'},
-// ── PRÄPOSITIONEN ──
-{section:'Präpositionen',id:'g43',sentence:'Das Buch liegt ___ dem Tisch.',opts:['auf','an','in','bei'],correct:'auf',explain:'auf + Dativ = auf dem Tisch (liegt = Position)'},
-{section:'Präpositionen',id:'g44',sentence:'Er geht ___ die Schule.',opts:['in','auf','an','zu'],correct:'in',explain:'in + Akkusativ = in die Schule (Bewegung)'},
-{section:'Präpositionen',id:'g45',sentence:'Sie wohnt ___ Hamburg.',opts:['in','nach','zu','an'],correct:'in',explain:'in + Dativ für Städte (Standort)'},
-{section:'Präpositionen',id:'g46',sentence:'Ich fahre ___ Hamburg.',opts:['in','nach','zu','an'],correct:'nach',explain:'nach + Stadt (ohne Artikel) für Bewegung'},
-{section:'Präpositionen',id:'g47',sentence:'Wir treffen uns ___ dem Bahnhof.',opts:['vor','an','auf','in'],correct:'vor',explain:'vor + Dativ = vor dem Bahnhof'},
-{section:'Präpositionen',id:'g48',sentence:'Das Café ist ___ der Brücke.',opts:['über','neben','auf','durch'],correct:'neben',explain:'neben + Dativ = neben der Brücke'},
-// ── PERFEKT ──
-{section:'Perfekt (Vergangenheit)',id:'g49',sentence:'Ich ___ gestern ins Kino gegangen.',opts:['bin','habe','hatte','war'],correct:'bin',explain:'gehen = Bewegungsverb → Perfekt mit sein'},
-{section:'Perfekt (Vergangenheit)',id:'g50',sentence:'Er ___ das Buch gelesen.',opts:['ist','hat','haben','war'],correct:'hat',explain:'lesen = kein Bewegungsverb → Perfekt mit haben'},
-{section:'Perfekt (Vergangenheit)',id:'g51',sentence:'Wir ___ nach Berlin gefahren.',opts:['haben','sind','sein','hatten'],correct:'sind',explain:'fahren = Bewegungsverb → Perfekt mit sein'},
-{section:'Perfekt (Vergangenheit)',id:'g52',sentence:'Sie ___ den Brief geschrieben.',opts:['ist','sind','hat','hatte'],correct:'hat',explain:'schreiben → Perfekt mit haben'},
+const GRAMMAR_EX_ALL = [
+// ── NOMINATIV vs AKKUSATIV (20) ──
+{section:'Nominativ vs. Akkusativ',id:'g1',sentence:'___ Mann schläft.',opts:['der','den','dem','des'],correct:'der',explain:'Nominativ Maskulin → der'},
+{section:'Nominativ vs. Akkusativ',id:'g2',sentence:'Ich sehe ___ Mann.',opts:['der','den','dem','des'],correct:'den',explain:'Akkusativ Maskulin → den'},
+{section:'Nominativ vs. Akkusativ',id:'g3',sentence:'___ Frau lacht.',opts:['die','der','dem','den'],correct:'die',explain:'Nominativ Feminin → die'},
+{section:'Nominativ vs. Akkusativ',id:'g4',sentence:'Er liebt ___ Frau.',opts:['die','der','dem','den'],correct:'die',explain:'Akkusativ Feminin → die (gleich wie Nominativ)'},
+{section:'Nominativ vs. Akkusativ',id:'g5',sentence:'___ Kind schläft.',opts:['das','dem','den','des'],correct:'das',explain:'Nominativ Neutrum → das'},
+{section:'Nominativ vs. Akkusativ',id:'g6',sentence:'Sie kauft ___ Buch.',opts:['das','dem','den','der'],correct:'das',explain:'Akkusativ Neutrum → das (gleich wie Nominativ)'},
+{section:'Nominativ vs. Akkusativ',id:'g7',sentence:'___ Hund bellt.',opts:['der','den','dem','das'],correct:'der',explain:'Nominativ Maskulin → der'},
+{section:'Nominativ vs. Akkusativ',id:'g8',sentence:'Wir haben ___ Hund.',opts:['der','den','dem','das'],correct:'den',explain:'Akkusativ Maskulin → den (nur Maskulin ändert sich!)'},
+{section:'Nominativ vs. Akkusativ',id:'g9',sentence:'___ Tisch ist alt.',opts:['der','den','dem','das'],correct:'der',explain:'Nominativ Maskulin → der'},
+{section:'Nominativ vs. Akkusativ',id:'g10',sentence:'Ich sehe ___ Tisch.',opts:['der','den','dem','das'],correct:'den',explain:'Akkusativ Maskulin → den'},
+{section:'Nominativ vs. Akkusativ',id:'g11',sentence:'___ Lampe leuchtet.',opts:['die','der','dem','das'],correct:'die',explain:'Nominativ Feminin → die'},
+{section:'Nominativ vs. Akkusativ',id:'g12',sentence:'Er kauft ___ Lampe.',opts:['die','der','dem','das'],correct:'die',explain:'Akkusativ Feminin → die'},
+{section:'Nominativ vs. Akkusativ',id:'g13',sentence:'___ Auto fährt schnell.',opts:['das','dem','den','der'],correct:'das',explain:'Nominativ Neutrum → das'},
+{section:'Nominativ vs. Akkusativ',id:'g14',sentence:'Sie braucht ___ Auto.',opts:['das','dem','den','der'],correct:'das',explain:'Akkusativ Neutrum → das'},
+{section:'Nominativ vs. Akkusativ',id:'g15',sentence:'___ Lehrer erklärt die Aufgabe.',opts:['der','den','dem','das'],correct:'der',explain:'Nominativ Maskulin → der'},
+{section:'Nominativ vs. Akkusativ',id:'g16',sentence:'Wir besuchen ___ Lehrer.',opts:['der','den','dem','das'],correct:'den',explain:'Akkusativ Maskulin → den'},
+{section:'Nominativ vs. Akkusativ',id:'g17',sentence:'___ Zug kommt pünktlich.',opts:['der','den','dem','das'],correct:'der',explain:'Nominativ Maskulin → der'},
+{section:'Nominativ vs. Akkusativ',id:'g18',sentence:'Ich nehme ___ Zug.',opts:['der','den','dem','das'],correct:'den',explain:'Akkusativ Maskulin → den'},
+{section:'Nominativ vs. Akkusativ',id:'g19',sentence:'___ Stadt ist groß.',opts:['die','der','dem','das'],correct:'die',explain:'Nominativ Feminin → die'},
+{section:'Nominativ vs. Akkusativ',id:'g20',sentence:'Er mag ___ Stadt.',opts:['die','der','dem','das'],correct:'die',explain:'Akkusativ Feminin → die'},
+
+// ── DATIV (20) ──
+{section:'Dativ',id:'g21',sentence:'Ich helfe ___ Mann.',opts:['der','den','dem','des'],correct:'dem',explain:'Dativ Maskulin → dem'},
+{section:'Dativ',id:'g22',sentence:'Er gibt ___ Frau das Buch.',opts:['die','der','dem','den'],correct:'der',explain:'Dativ Feminin → der'},
+{section:'Dativ',id:'g23',sentence:'Sie schreibt ___ Kind.',opts:['das','den','der','dem'],correct:'dem',explain:'Dativ Neutrum → dem'},
+{section:'Dativ',id:'g24',sentence:'Ich wohne in ___ Stadt.',opts:['die','der','dem','das'],correct:'der',explain:'in + Dativ Feminin → der Stadt'},
+{section:'Dativ',id:'g25',sentence:'Er fährt mit ___ Zug.',opts:['der','den','dem','das'],correct:'dem',explain:'mit + Dativ Maskulin → dem Zug'},
+{section:'Dativ',id:'g26',sentence:'Sie kommt aus ___ Schweiz.',opts:['die','der','dem','das'],correct:'der',explain:'aus + Dativ Feminin → der Schweiz'},
+{section:'Dativ',id:'g27',sentence:'Wir gehen zu ___ Arzt.',opts:['der','den','dem','das'],correct:'dem',explain:'zu + Dativ Maskulin → dem Arzt'},
+{section:'Dativ',id:'g28',sentence:'Das Buch gehört ___ Lehrerin.',opts:['die','der','dem','den'],correct:'der',explain:'Dativ Feminin → der Lehrerin'},
+{section:'Dativ',id:'g29',sentence:'Er sitzt neben ___ Tisch.',opts:['der','den','dem','das'],correct:'dem',explain:'neben + Dativ Maskulin → dem Tisch'},
+{section:'Dativ',id:'g30',sentence:'Das Café ist gegenüber ___ Bahnhof.',opts:['der','den','dem','das'],correct:'dem',explain:'gegenüber + Dativ → dem Bahnhof'},
+{section:'Dativ',id:'g31',sentence:'Er spricht mit ___ Kind.',opts:['das','dem','den','der'],correct:'dem',explain:'mit + Dativ Neutrum → dem Kind'},
+{section:'Dativ',id:'g32',sentence:'Sie wohnt bei ___ Freundin.',opts:['die','der','dem','das'],correct:'der',explain:'bei + Dativ Feminin → der Freundin'},
+{section:'Dativ',id:'g33',sentence:'Ich fahre nach ___ Arbeit.',opts:['die','der','dem','das'],correct:'der',explain:'nach + Dativ Feminin → der Arbeit'},
+{section:'Dativ',id:'g34',sentence:'Das Geschenk ist für ___ Mutter.',opts:['die','der','dem','das'],correct:'die',explain:'für + Akkusativ Feminin → die Mutter (für = immer Akkusativ!)'},
+{section:'Dativ',id:'g35',sentence:'Er hilft ___ alten Mann.',opts:['der','den','dem','des'],correct:'dem',explain:'Dativ Maskulin → dem alten Mann'},
+{section:'Dativ',id:'g36',sentence:'Sie zeigt ___ Kind das Buch.',opts:['das','dem','den','der'],correct:'dem',explain:'zeigen + Dativ → dem Kind'},
+{section:'Dativ',id:'g37',sentence:'Wir kommen aus ___ Kino.',opts:['das','dem','den','der'],correct:'dem',explain:'aus + Dativ Neutrum → dem Kino'},
+{section:'Dativ',id:'g38',sentence:'Das Paket ist von ___ Chef.',opts:['der','den','dem','das'],correct:'dem',explain:'von + Dativ Maskulin → dem Chef'},
+{section:'Dativ',id:'g39',sentence:'Er arbeitet seit ___ Woche.',opts:['die','der','dem','das'],correct:'einer',explain:'seit + Dativ Feminin → einer Woche (unbestimmter Artikel)'},
+{section:'Dativ',id:'g40',sentence:'Das Haus gehört ___ Familie.',opts:['die','der','dem','das'],correct:'der',explain:'Dativ Feminin → der Familie'},
+
+// ── UNBESTIMMTER ARTIKEL (15) ──
+{section:'Unbestimmter Artikel',id:'g41',sentence:'Das ist ___ Tisch.',opts:['ein','eine','einen','einem'],correct:'ein',explain:'Nominativ Maskulin → ein'},
+{section:'Unbestimmter Artikel',id:'g42',sentence:'Ich kaufe ___ Lampe.',opts:['ein','eine','einen','einem'],correct:'eine',explain:'Akkusativ Feminin → eine'},
+{section:'Unbestimmter Artikel',id:'g43',sentence:'Er hilft ___ Freund.',opts:['ein','einen','einem','eines'],correct:'einem',explain:'Dativ Maskulin → einem'},
+{section:'Unbestimmter Artikel',id:'g44',sentence:'Sie hat ___ neues Auto.',opts:['ein','eine','einen','einem'],correct:'ein',explain:'Akkusativ Neutrum → ein'},
+{section:'Unbestimmter Artikel',id:'g45',sentence:'Das ist ___ gute Idee.',opts:['ein','eine','einen','einem'],correct:'eine',explain:'Nominativ Feminin → eine'},
+{section:'Unbestimmter Artikel',id:'g46',sentence:'Er trinkt ___ Kaffee.',opts:['ein','eine','einen','einem'],correct:'einen',explain:'Akkusativ Maskulin → einen'},
+{section:'Unbestimmter Artikel',id:'g47',sentence:'Ich brauche ___ Stift.',opts:['ein','eine','einen','einem'],correct:'einen',explain:'Akkusativ Maskulin → einen'},
+{section:'Unbestimmter Artikel',id:'g48',sentence:'Sie wohnt in ___ Wohnung.',opts:['ein','eine','einer','einem'],correct:'einer',explain:'Dativ Feminin → einer Wohnung'},
+{section:'Unbestimmter Artikel',id:'g49',sentence:'Das ist ___ Hund.',opts:['ein','eine','einen','einem'],correct:'ein',explain:'Nominativ Maskulin → ein'},
+{section:'Unbestimmter Artikel',id:'g50',sentence:'Ich sehe ___ Hund.',opts:['ein','eine','einen','einem'],correct:'einen',explain:'Akkusativ Maskulin → einen'},
+{section:'Unbestimmter Artikel',id:'g51',sentence:'Er gibt mir ___ Buch.',opts:['ein','eine','einen','einem'],correct:'ein',explain:'Akkusativ Neutrum → ein'},
+{section:'Unbestimmter Artikel',id:'g52',sentence:'Sie spielt mit ___ Kind.',opts:['ein','eine','einem','einen'],correct:'einem',explain:'mit + Dativ Neutrum → einem Kind'},
+{section:'Unbestimmter Artikel',id:'g53',sentence:'Das gehört ___ Freund.',opts:['ein','einen','einem','einer'],correct:'einem',explain:'Dativ Maskulin → einem Freund'},
+{section:'Unbestimmter Artikel',id:'g54',sentence:'Ich brauche ___ Antwort.',opts:['ein','eine','einer','einem'],correct:'eine',explain:'Akkusativ Feminin → eine Antwort'},
+{section:'Unbestimmter Artikel',id:'g55',sentence:'Das ist ___ Problem.',opts:['ein','eine','einen','einem'],correct:'ein',explain:'Nominativ Neutrum → ein Problem'},
+
+// ── NEGATION (15) ──
+{section:'Negation: nicht vs. kein',id:'g56',sentence:'Ich habe ___ Auto.',opts:['nicht','kein','keine','keinen'],correct:'kein',explain:'Vor Neutrum-Substantiv (das Auto) → kein'},
+{section:'Negation: nicht vs. kein',id:'g57',sentence:'Sie wohnt ___ in Hamburg.',opts:['nicht','kein','keine','keinen'],correct:'nicht',explain:'Vor Adverbien → nicht'},
+{section:'Negation: nicht vs. kein',id:'g58',sentence:'Er hat ___ Zeit.',opts:['nicht','kein','keine','keinen'],correct:'keine',explain:'Vor Feminin-Substantiv (die Zeit) → keine'},
+{section:'Negation: nicht vs. kein',id:'g59',sentence:'Ich kenne ___ Arzt hier.',opts:['nicht','kein','keinen','keine'],correct:'keinen',explain:'Vor Maskulin-Substantiv Akkusativ → keinen'},
+{section:'Negation: nicht vs. kein',id:'g60',sentence:'Das ist ___ richtig.',opts:['nicht','kein','keine','keinen'],correct:'nicht',explain:'Vor Adjektiven → nicht'},
+{section:'Negation: nicht vs. kein',id:'g61',sentence:'Wir haben ___ Milch.',opts:['nicht','kein','keine','keinen'],correct:'keine',explain:'Vor Feminin-Substantiv (die Milch) → keine'},
+{section:'Negation: nicht vs. kein',id:'g62',sentence:'Er kommt ___ heute.',opts:['nicht','kein','keine','keinen'],correct:'nicht',explain:'Vor Zeitadverbien → nicht'},
+{section:'Negation: nicht vs. kein',id:'g63',sentence:'Ich habe ___ Hunger.',opts:['nicht','kein','keinen','keine'],correct:'keinen',explain:'Hunger ist Maskulin Akkusativ → keinen'},
+{section:'Negation: nicht vs. kein',id:'g64',sentence:'Das schmeckt ___ gut.',opts:['nicht','kein','keine','keinen'],correct:'nicht',explain:'Vor Adjektiven/Verben → nicht'},
+{section:'Negation: nicht vs. kein',id:'g65',sentence:'Ich habe ___ Bruder.',opts:['nicht','kein','keinen','keine'],correct:'keinen',explain:'Bruder ist Maskulin Akkusativ → keinen'},
+{section:'Negation: nicht vs. kein',id:'g66',sentence:'Er arbeitet ___ hier.',opts:['nicht','kein','keine','keinen'],correct:'nicht',explain:'Vor Ortsadverbien → nicht'},
+{section:'Negation: nicht vs. kein',id:'g67',sentence:'Wir haben ___ Geld.',opts:['nicht','kein','keine','keinen'],correct:'kein',explain:'Geld ist Neutrum → kein'},
+{section:'Negation: nicht vs. kein',id:'g68',sentence:'Das ist ___ mein Buch.',opts:['nicht','kein','keine','keinen'],correct:'nicht',explain:'Vor Possessivpronomen → nicht'},
+{section:'Negation: nicht vs. kein',id:'g69',sentence:'Sie hat ___ Freunde.',opts:['nicht','kein','keine','keinen'],correct:'keine',explain:'Freunde ist Plural → keine'},
+{section:'Negation: nicht vs. kein',id:'g70',sentence:'Ich verstehe das ___ .',opts:['nicht','kein','keine','keinen'],correct:'nicht',explain:'Verb direkt negieren → nicht'},
+
+// ── SEIN & HABEN (10) ──
+{section:'Verben: sein & haben',id:'g71',sentence:'Wir ___ Studenten.',opts:['bin','bist','ist','sind'],correct:'sind',explain:'wir → sind'},
+{section:'Verben: sein & haben',id:'g72',sentence:'Du ___ sehr nett.',opts:['bin','bist','ist','sind'],correct:'bist',explain:'du → bist'},
+{section:'Verben: sein & haben',id:'g73',sentence:'Er ___ ein Auto.',opts:['habe','hast','hat','haben'],correct:'hat',explain:'er/sie/es → hat'},
+{section:'Verben: sein & haben',id:'g74',sentence:'Ich ___ Hunger.',opts:['habe','hast','hat','haben'],correct:'habe',explain:'ich → habe'},
+{section:'Verben: sein & haben',id:'g75',sentence:'Ihr ___ müde.',opts:['bin','bist','seid','sind'],correct:'seid',explain:'ihr → seid'},
+{section:'Verben: sein & haben',id:'g76',sentence:'Sie (Pl.) ___ keine Zeit.',opts:['habe','hast','hat','haben'],correct:'haben',explain:'sie (Plural) → haben'},
+{section:'Verben: sein & haben',id:'g77',sentence:'Das ___ mein Buch.',opts:['bin','bist','ist','sind'],correct:'ist',explain:'das/er/sie/es → ist'},
+{section:'Verben: sein & haben',id:'g78',sentence:'___ du ein Geschwister?',opts:['Habe','Hast','Hat','Haben'],correct:'Hast',explain:'du + haben → hast'},
+{section:'Verben: sein & haben',id:'g79',sentence:'Wir ___ kein Geld.',opts:['habe','hast','hat','haben'],correct:'haben',explain:'wir → haben'},
+{section:'Verben: sein & haben',id:'g80',sentence:'Ich ___ müde.',opts:['bin','bist','ist','sind'],correct:'bin',explain:'ich + sein → bin'},
+
+// ── MODALVERBEN (15) ──
+{section:'Modalverben',id:'g81',sentence:'Ich ___ Deutsch sprechen.',opts:['kann','kannst','könnt','können'],correct:'kann',explain:'ich + können → kann'},
+{section:'Modalverben',id:'g82',sentence:'Du ___ mehr schlafen.',opts:['musst','muss','müsst','müssen'],correct:'musst',explain:'du + müssen → musst'},
+{section:'Modalverben',id:'g83',sentence:'Er ___ nach Berlin fahren.',opts:['will','willst','wollt','wollen'],correct:'will',explain:'er/sie/es + wollen → will'},
+{section:'Modalverben',id:'g84',sentence:'Wir ___ heute lernen.',opts:['soll','sollst','sollte','sollen'],correct:'sollen',explain:'wir + sollen → sollen'},
+{section:'Modalverben',id:'g85',sentence:'Sie (Sg.) ___ nicht so laut sein.',opts:['darf','darfst','dürfen','dürft'],correct:'darf',explain:'sie (Sg.) + dürfen → darf'},
+{section:'Modalverben',id:'g86',sentence:'Ihr ___ das nicht machen.',opts:['darf','darfst','dürfen','dürft'],correct:'dürft',explain:'ihr + dürfen → dürft'},
+{section:'Modalverben',id:'g87',sentence:'___ du schwimmen?',opts:['Kann','Kannst','Könnt','Können'],correct:'Kannst',explain:'du + können → kannst'},
+{section:'Modalverben',id:'g88',sentence:'Er ___ morgen arbeiten.',opts:['muss','musst','müsst','müssen'],correct:'muss',explain:'er/sie/es + müssen → muss'},
+{section:'Modalverben',id:'g89',sentence:'Wir ___ früher kommen.',opts:['soll','sollst','sollen','solltet'],correct:'sollen',explain:'wir + sollen → sollen'},
+{section:'Modalverben',id:'g90',sentence:'Ich ___ ein Eis essen.',opts:['will','willst','wollt','wollen'],correct:'will',explain:'ich + wollen → will'},
+{section:'Modalverben',id:'g91',sentence:'Das ___ nicht wahr sein.',opts:['kann','kannst','könnt','können'],correct:'kann',explain:'das/es + können → kann'},
+{section:'Modalverben',id:'g92',sentence:'Ihr ___ leiser sein.',opts:['muss','musst','müsst','müssen'],correct:'müsst',explain:'ihr + müssen → müsst'},
+{section:'Modalverben',id:'g93',sentence:'Sie (Pl.) ___ das sehen.',opts:['soll','sollt','sollen','sollst'],correct:'sollen',explain:'sie (Pl.) + sollen → sollen'},
+{section:'Modalverben',id:'g94',sentence:'Ich ___ hier parken.',opts:['darf','darfst','dürfen','dürft'],correct:'darf',explain:'ich + dürfen → darf'},
+{section:'Modalverben',id:'g95',sentence:'___ wir gehen?',opts:['Kann','Kannst','Können','Könnt'],correct:'Können',explain:'wir + können → können'},
+
+// ── PRÄPOSITIONEN (15) ──
+{section:'Präpositionen',id:'g96',sentence:'Das Buch liegt ___ dem Tisch.',opts:['auf','an','in','über'],correct:'auf',explain:'auf + Dativ = liegt auf dem Tisch (Position)'},
+{section:'Präpositionen',id:'g97',sentence:'Er geht ___ die Schule.',opts:['in','auf','an','zu'],correct:'in',explain:'in + Akkusativ = in die Schule (Bewegung)'},
+{section:'Präpositionen',id:'g98',sentence:'Sie wohnt ___ Hamburg.',opts:['in','nach','zu','an'],correct:'in',explain:'in + Dativ für Städte (Standort)'},
+{section:'Präpositionen',id:'g99',sentence:'Ich fahre ___ Hamburg.',opts:['in','nach','zu','an'],correct:'nach',explain:'nach + Stadt ohne Artikel (Bewegung)'},
+{section:'Präpositionen',id:'g100',sentence:'Das Café ist ___ der Brücke.',opts:['über','neben','auf','durch'],correct:'neben',explain:'neben + Dativ = neben der Brücke'},
+{section:'Präpositionen',id:'g101',sentence:'Wir treffen uns ___ dem Bahnhof.',opts:['vor','an','auf','in'],correct:'vor',explain:'vor + Dativ = vor dem Bahnhof'},
+{section:'Präpositionen',id:'g102',sentence:'Das Bild hängt ___ der Wand.',opts:['auf','an','in','über'],correct:'an',explain:'an + Dativ = an der Wand (Position)'},
+{section:'Präpositionen',id:'g103',sentence:'Er hängt das Bild ___ die Wand.',opts:['auf','an','in','über'],correct:'an',explain:'an + Akkusativ = an die Wand (Bewegung)'},
+{section:'Präpositionen',id:'g104',sentence:'Sie ist ___ der Bibliothek.',opts:['in','nach','zu','an'],correct:'in',explain:'in + Dativ für Gebäude (Standort)'},
+{section:'Präpositionen',id:'g105',sentence:'Ich gehe ___ der Bibliothek.',opts:['in','nach','zu','an'],correct:'in',explain:'in + Akkusativ (Bewegung in Gebäude)'},
+{section:'Präpositionen',id:'g106',sentence:'Er wohnt ___ mir.',opts:['bei','mit','an','zu'],correct:'bei',explain:'bei + Dativ = bei mir (bei jemandem wohnen)'},
+{section:'Präpositionen',id:'g107',sentence:'Ich fahre ___ meiner Freundin.',opts:['bei','mit','an','zu'],correct:'mit',explain:'mit + Dativ = mit meiner Freundin'},
+{section:'Präpositionen',id:'g108',sentence:'Das Geschäft ist ___ dem Rathaus.',opts:['gegenüber','neben','vor','hinter'],correct:'gegenüber',explain:'gegenüber + Dativ = gegenüber dem Rathaus'},
+{section:'Präpositionen',id:'g109',sentence:'Die Katze liegt ___ dem Sofa.',opts:['auf','unter','in','an'],correct:'unter',explain:'unter + Dativ = unter dem Sofa'},
+{section:'Präpositionen',id:'g110',sentence:'Er legt die Zeitung ___ den Tisch.',opts:['auf','unter','in','an'],correct:'auf',explain:'auf + Akkusativ = auf den Tisch (Bewegung)'},
+
+// ── PERFEKT (15) ──
+{section:'Perfekt (Vergangenheit)',id:'g111',sentence:'Ich ___ gestern ins Kino gegangen.',opts:['bin','habe','hatte','war'],correct:'bin',explain:'gehen = Bewegungsverb → Perfekt mit sein'},
+{section:'Perfekt (Vergangenheit)',id:'g112',sentence:'Er ___ das Buch gelesen.',opts:['ist','hat','haben','war'],correct:'hat',explain:'lesen = kein Bewegungsverb → Perfekt mit haben'},
+{section:'Perfekt (Vergangenheit)',id:'g113',sentence:'Wir ___ nach Berlin gefahren.',opts:['haben','sind','sein','hatten'],correct:'sind',explain:'fahren = Bewegungsverb → Perfekt mit sein'},
+{section:'Perfekt (Vergangenheit)',id:'g114',sentence:'Sie ___ den Brief geschrieben.',opts:['ist','sind','hat','hatte'],correct:'hat',explain:'schreiben → Perfekt mit haben'},
+{section:'Perfekt (Vergangenheit)',id:'g115',sentence:'Er ___ früh aufgestanden.',opts:['hat','ist','war','hatte'],correct:'ist',explain:'aufstehen = Zustandsveränderung → Perfekt mit sein'},
+{section:'Perfekt (Vergangenheit)',id:'g116',sentence:'Ich ___ Kaffee getrunken.',opts:['bin','habe','hatte','war'],correct:'habe',explain:'trinken → Perfekt mit haben'},
+{section:'Perfekt (Vergangenheit)',id:'g117',sentence:'Das Kind ___ eingeschlafen.',opts:['hat','ist','war','hatte'],correct:'ist',explain:'einschlafen = Zustandsveränderung → Perfekt mit sein'},
+{section:'Perfekt (Vergangenheit)',id:'g118',sentence:'Wir ___ Pizza gegessen.',opts:['haben','sind','sein','hatten'],correct:'haben',explain:'essen → Perfekt mit haben'},
+{section:'Perfekt (Vergangenheit)',id:'g119',sentence:'Sie ___ nach Hause gekommen.',opts:['hat','ist','war','hatte'],correct:'ist',explain:'kommen = Bewegungsverb → Perfekt mit sein'},
+{section:'Perfekt (Vergangenheit)',id:'g120',sentence:'Ich ___ lange gearbeitet.',opts:['bin','habe','hatte','war'],correct:'habe',explain:'arbeiten → Perfekt mit haben'},
+{section:'Perfekt (Vergangenheit)',id:'g121',sentence:'Er ___ in der Stadt geblieben.',opts:['hat','ist','war','hatte'],correct:'ist',explain:'bleiben = Positionsveränderung → Perfekt mit sein'},
+{section:'Perfekt (Vergangenheit)',id:'g122',sentence:'Sie ___ das Fenster geöffnet.',opts:['ist','hat','war','hatte'],correct:'hat',explain:'öffnen → Perfekt mit haben'},
+{section:'Perfekt (Vergangenheit)',id:'g123',sentence:'Wir ___ lange gewartetet.',opts:['haben','sind','sein','hatten'],correct:'haben',explain:'warten → Perfekt mit haben'},
+{section:'Perfekt (Vergangenheit)',id:'g124',sentence:'Er ___ in Hamburg gewesen.',opts:['hat','ist','war','hatte'],correct:'ist',explain:'sein (gewesen) → Perfekt mit sein'},
+{section:'Perfekt (Vergangenheit)',id:'g125',sentence:'Ich ___ ein Bild gemacht.',opts:['bin','habe','hatte','war'],correct:'habe',explain:'machen → Perfekt mit haben'},
+
+// ── ADJEKTIVDEKLINATION (10) ──
+{section:'Adjektivdeklination',id:'g126',sentence:'Das ist ein ___ Hund.',opts:['groß','großer','große','großen'],correct:'großer',explain:'nach unbestimmtem Artikel Nom. Maskulin → -er'},
+{section:'Adjektivdeklination',id:'g127',sentence:'Das ist eine ___ Idee.',opts:['gut','guter','gute','guten'],correct:'gute',explain:'nach unbestimmtem Artikel Nom. Feminin → -e'},
+{section:'Adjektivdeklination',id:'g128',sentence:'Er hat einen ___ Hund.',opts:['groß','großer','große','großen'],correct:'großen',explain:'nach unbestimmtem Artikel Akk. Maskulin → -en'},
+{section:'Adjektivdeklination',id:'g129',sentence:'Der ___ Mann schläft.',opts:['alt','alter','alte','alten'],correct:'alte',explain:'nach bestimmtem Artikel Nom. Maskulin → -e'},
+{section:'Adjektivdeklination',id:'g130',sentence:'Ich sehe den ___ Mann.',opts:['alt','alter','alte','alten'],correct:'alten',explain:'nach bestimmtem Artikel Akk. Maskulin → -en'},
+{section:'Adjektivdeklination',id:'g131',sentence:'Die ___ Frau arbeitet hier.',opts:['jung','junger','junge','jungen'],correct:'junge',explain:'nach bestimmtem Artikel Nom. Feminin → -e'},
+{section:'Adjektivdeklination',id:'g132',sentence:'Das ___ Kind spielt.',opts:['klein','kleiner','kleine','kleines'],correct:'kleine',explain:'nach bestimmtem Artikel Nom. Neutrum → -e'},
+{section:'Adjektivdeklination',id:'g133',sentence:'Ich helfe dem ___ Mann.',opts:['alt','alter','alte','alten'],correct:'alten',explain:'Dativ nach bestimmtem Artikel → -en'},
+{section:'Adjektivdeklination',id:'g134',sentence:'Das ist ein ___ Auto.',opts:['neu','neuer','neue','neues'],correct:'neues',explain:'nach unbestimmtem Artikel Nom. Neutrum → -es'},
+{section:'Adjektivdeklination',id:'g135',sentence:'Er kauft ein ___ Buch.',opts:['interessant','interessanter','interessante','interessantes'],correct:'interessantes',explain:'nach unbestimmtem Artikel Akk. Neutrum → -es'},
+
+// ── TRENNBARE VERBEN & WORTSTELLUNG (10) ──
+{section:'Trennbare Verben & Wortstellung',id:'g136',sentence:'Ich ___ um 7 Uhr ___.',opts:['stehe...auf','aufstehe...','stehen...auf','aufstehen...'],correct:'stehe...auf',explain:'aufstehen ist trennbar: Präfix ans Ende → ich stehe...auf'},
+{section:'Trennbare Verben & Wortstellung',id:'g137',sentence:'Er ___ das Licht ___.',opts:['macht...an','anmacht...','machen...an','anmachen...'],correct:'macht...an',explain:'anmachen ist trennbar: → er macht...an'},
+{section:'Trennbare Verben & Wortstellung',id:'g138',sentence:'Wann ___ der Zug ___?',opts:['fährt...ab','abfährt...','fahren...ab','abfahren...'],correct:'fährt...ab',explain:'abfahren trennbar: → fährt...ab'},
+{section:'Trennbare Verben & Wortstellung',id:'g139',sentence:'Sie ___ ihre Freundin ___.',opts:['ruft...an','anruft...','rufen...an','anrufen...'],correct:'ruft...an',explain:'anrufen trennbar: → ruft...an'},
+{section:'Trennbare Verben & Wortstellung',id:'g140',sentence:'Ich ___ mein Handy ___.',opts:['mache...aus','ausmache...','machen...aus','ausmachen...'],correct:'mache...aus',explain:'ausmachen trennbar: → mache...aus'},
+{section:'Trennbare Verben & Wortstellung',id:'g141',sentence:'Heute ___ ich früh ___.',opts:['stehe...auf','aufstehe...','stehen...auf','aufzustehen...'],correct:'stehe...auf',explain:'Auch bei Inversion bleibt Präfix am Ende'},
+{section:'Trennbare Verben & Wortstellung',id:'g142',sentence:'Er sagt, er ___ morgen ___.',opts:['kommt...mit','mitkommt...','kommen...mit','mitkommen...'],correct:'kommt...mit',explain:'mitkommen trennbar: in Hauptsatz → kommt...mit'},
+{section:'Trennbare Verben & Wortstellung',id:'g143',sentence:'Ich möchte um 8 Uhr ___.',opts:['aufstehen','stehe...auf','aufsteht','stehen...auf'],correct:'aufstehen',explain:'Nach Modalverb kommt Infinitiv → aufstehen (nicht trennbar!)'},
+{section:'Trennbare Verben & Wortstellung',id:'g144',sentence:'Er will das Licht ___.',opts:['anmachen','macht...an','machen...an','anmacht'],correct:'anmachen',explain:'Nach Modalverb kommt Infinitiv → anmachen'},
+{section:'Trennbare Verben & Wortstellung',id:'g145',sentence:'Wir müssen früh ___.',opts:['aufstehen','stehe...auf','aufsteht','stehen...auf'],correct:'aufstehen',explain:'Nach müssen kommt Infinitiv → aufstehen'},
+
+// ── SATZSTRUKTUR & KONJUNKTIONEN (10) ──
+{section:'Satzstruktur & Konjunktionen',id:'g146',sentence:'Ich lerne Deutsch, ___ ich in Hamburg wohne.',opts:['weil','aber','und','oder'],correct:'weil',explain:'weil = Begründung → Verb ans Ende des Nebensatzes'},
+{section:'Satzstruktur & Konjunktionen',id:'g147',sentence:'Er kommt nicht, ___ er krank ist.',opts:['weil','aber','und','oder'],correct:'weil',explain:'weil leitet Kausalsatz ein → Verb ans Ende'},
+{section:'Satzstruktur & Konjunktionen',id:'g148',sentence:'Ich mag Kaffee, ___ er mag Tee.',opts:['weil','aber','dass','obwohl'],correct:'aber',explain:'aber = Gegensatz → normale Wortstellung'},
+{section:'Satzstruktur & Konjunktionen',id:'g149',sentence:'Sie sagt, ___ sie müde ist.',opts:['weil','aber','dass','obwohl'],correct:'dass',explain:'dass leitet Objektsatz ein → Verb ans Ende'},
+{section:'Satzstruktur & Konjunktionen',id:'g150',sentence:'Er arbeitet, ___ er krank ist.',opts:['weil','aber','obwohl','dass'],correct:'obwohl',explain:'obwohl = Konzessiv → Verb ans Ende des Nebensatzes'},
 ];
+
+// ── SESSION LOGIC ──
+const GRAMMAR_SESSION_SIZE = 20;
+
+function getGrammarSession(){
+  // Group by section, pick proportionally
+  const sections = {};
+  GRAMMAR_EX_ALL.forEach(ex => {
+    if(!sections[ex.section]) sections[ex.section] = [];
+    sections[ex.section].push(ex);
+  });
+  // Shuffle each section and pick a proportional sample
+  const all = [];
+  for(const exs of Object.values(sections)){
+    const shuffled = [...exs].sort(()=>Math.random()-0.5);
+    // Take at least 1 from each section, up to proportional
+    const take = Math.max(1, Math.round(exs.length / GRAMMAR_EX_ALL.length * GRAMMAR_SESSION_SIZE));
+    all.push(...shuffled.slice(0, take));
+  }
+  // Final shuffle and trim to exactly 20
+  const final = all.sort(()=>Math.random()-0.5).slice(0, GRAMMAR_SESSION_SIZE);
+  return final;
+}
+
+// Active session (regenerated each time grammar tab opens fresh)
+let GRAMMAR_EX = getGrammarSession();
 
 // (CATS/ALL_CARDS/WORD_MAP defined above)
 
@@ -2303,30 +2456,65 @@ let grammarAnswers={};
 
 function renderGrammar(){
   const scroll=document.getElementById('grammarScroll');
-  if(scroll.children.length>0)return; // already rendered
-  // group by section
+  if(scroll.children.length>0)return;
+  // Generate fresh random session
+  GRAMMAR_EX = getGrammarSession();
+  grammarAnswers={};
   const sections={};
   GRAMMAR_EX.forEach(ex=>{if(!sections[ex.section])sections[ex.section]=[];sections[ex.section].push(ex);});
-  let html='';
+  scroll.innerHTML='';
+  // header
+  const hdr=document.createElement('div');
+  hdr.style.cssText='padding:14px 16px 6px;font-size:13px;font-weight:700;color:var(--text-muted)';
+  hdr.textContent=`📋 ${GRAMMAR_EX.length} zufällige Übungen aus ${GRAMMAR_EX_ALL.length} gesamt`;
+  scroll.appendChild(hdr);
   for(const [sec,exs] of Object.entries(sections)){
-    html+=`<div class="grammar-section">
-      <div class="gs-title">📝 ${sec}</div>
-      <div class="gs-sub">Wähle den richtigen Artikel</div>`;
+    const secDiv=document.createElement('div');
+    secDiv.className='grammar-section';
+    secDiv.innerHTML='<div class="gs-title">📝 '+sec+'</div><div class="gs-sub">Wähle die richtige Antwort</div>';
     exs.forEach(ex=>{
       const answered=grammarAnswers[ex.id];
       const isCorrect=answered===ex.correct;
-      html+=`<div class="grammar-ex${answered?' answered '+(isCorrect?'correct':'wrong'):''}" id="ge_${ex.id}">
-        <div class="ge-sentence">${ex.sentence.replace('___',`<span class="ge-blank" id="gb_${ex.id}">${answered||'___'}</span>`)}</div>
-        <div class="ge-opts" id="go_${ex.id}">
-          ${ex.opts.map(o=>`<button class="ge-opt${answered?(o===ex.correct?' correct':o===answered&&o!==ex.correct?' wrong locked':' locked'):''}
-            onclick="pickGE('${ex.id}','${o}')">${o}</button>`).join('')}
-        </div>
-        ${answered?`<div class="ge-feedback show ${isCorrect?'ok':'bad'}">${isCorrect?'✓ Richtig!':'✗ '+ex.explain}</div>`:'<div class="ge-feedback" id="gf_${ex.id}"></div>'}
-      </div>`;
+      const box=document.createElement('div');
+      box.className='grammar-ex'+(answered?' answered '+(isCorrect?'correct':'wrong'):'');
+      box.id='ge_'+ex.id;
+      // sentence with blank
+      const sentDiv=document.createElement('div');
+      sentDiv.className='ge-sentence';
+      const parts=ex.sentence.split('___');
+      sentDiv.appendChild(document.createTextNode(parts[0]));
+      const blank=document.createElement('span');
+      blank.className='ge-blank';blank.id='gb_'+ex.id;
+      blank.textContent=answered||'___';
+      sentDiv.appendChild(blank);
+      if(parts[1])sentDiv.appendChild(document.createTextNode(parts[1]));
+      box.appendChild(sentDiv);
+      // options
+      const optsDiv=document.createElement('div');
+      optsDiv.className='ge-opts';optsDiv.id='go_'+ex.id;
+      ex.opts.forEach(o=>{
+        const btn=document.createElement('button');
+        btn.className='ge-opt';
+        if(answered){
+          btn.classList.add('locked');
+          if(o===ex.correct)btn.classList.add('correct');
+          else if(o===answered&&o!==ex.correct)btn.classList.add('wrong');
+        }
+        btn.textContent=o;
+        btn.addEventListener('click',()=>pickGE(ex.id,o));
+        optsDiv.appendChild(btn);
+      });
+      box.appendChild(optsDiv);
+      // feedback
+      const fb=document.createElement('div');
+      fb.className='ge-feedback'+(answered?' show '+(isCorrect?'ok':'bad'):'');
+      fb.id='gf_'+ex.id;
+      if(answered)fb.textContent=isCorrect?'✓ Richtig!':'✗ '+ex.explain;
+      box.appendChild(fb);
+      secDiv.appendChild(box);
     });
-    html+='</div>';
+    scroll.appendChild(secDiv);
   }
-  scroll.innerHTML=html;
   updateGrammarScore();
 }
 function pickGE(id,choice){
@@ -2337,18 +2525,23 @@ function pickGE(id,choice){
   if(ok)P.grammarScore=(P.grammarScore||0)+1;
   P.grammarTotal=(P.grammarTotal||0)+1;
   saveP();
-  // update UI
+  // update DOM
   const box=document.getElementById('ge_'+id);
   if(box){
     box.className='grammar-ex answered '+(ok?'correct':'wrong');
-    document.getElementById('gb_'+id).textContent=choice;
-    document.querySelectorAll(`#go_${id} .ge-opt`).forEach(b=>{
+    const gb=document.getElementById('gb_'+id);
+    if(gb)gb.textContent=choice;
+    box.querySelectorAll('.ge-opt').forEach(b=>{
       b.classList.add('locked');
-      if(b.textContent===ex.correct)b.classList.add('correct');
-      else if(b.textContent===choice&&!ok)b.classList.add('wrong');
+      if(b.textContent.trim()===ex.correct)b.classList.add('correct');
+      else if(b.textContent.trim()===choice&&!ok)b.classList.add('wrong');
     });
-    const fb=document.getElementById('gf_'+id)||box.querySelector('.ge-feedback');
-    if(fb){fb.textContent=ok?'✓ Richtig!':'✗ '+ex.explain;fb.className='ge-feedback show '+(ok?'ok':'bad');}
+    let fb=document.getElementById('gf_'+id)||box.querySelector('.ge-feedback');
+    if(!fb){fb=document.createElement('div');box.appendChild(fb);}
+    fb.textContent=ok?'✓ Richtig!':'✗ '+ex.explain;
+    fb.className='ge-feedback show '+(ok?'ok':'bad');
+    // scroll into view gently
+    box.scrollIntoView({behavior:'smooth',block:'nearest'});
   }
   updateGrammarScore();
 }
@@ -2365,13 +2558,14 @@ function updateGrammarScore(){
       banner.id='grammarScoreBanner';
       banner.className='grammar-score show';
       banner.style.margin='0 14px 16px';
-      banner.innerHTML=`${msg} ${correct}/${total} richtig (${pct}%) <button onclick="resetGrammar()" style="margin-left:12px;background:var(--white);border:none;color:var(--blue-d);font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;padding:4px 10px;border-radius:8px">↺ Nochmal</button>`;
+      banner.innerHTML=`${msg} ${correct}/${total} richtig (${pct}%) <button onclick="resetGrammar()" style="margin-left:12px;background:var(--blue);border:none;color:white;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer;padding:6px 14px;border-radius:10px">🔀 Neue Runde</button>`;
       document.getElementById('grammarScroll').prepend(banner);
     }
   }
 }
 function resetGrammar(){
   grammarAnswers={};
+  GRAMMAR_EX=getGrammarSession();
   document.getElementById('grammarScroll').innerHTML='';
   renderGrammar();
 }
