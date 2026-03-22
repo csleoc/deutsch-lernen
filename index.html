@@ -80,14 +80,14 @@ body{
    CONTENT
 ═══════════════════════════ */
 .content{flex:1;overflow:hidden;position:relative;padding-bottom:var(--nav-h)}
-.tab-panel{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none;padding-bottom:env(safe-area-inset-bottom,8px)}
+.tab-panel{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none;padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,16px) + 16px)}
 .tab-panel.active{display:block}
 #panel-flashcards{display:none;flex-direction:column}
 #panel-flashcards.active{display:flex}
 #panel-reader{display:none;flex-direction:column}
 #panel-reader.active{display:flex}
-#panel-grammar{display:none;flex-direction:column}
-#panel-grammar.active{display:flex}
+#panel-ubungen{display:none;flex-direction:column}
+#panel-ubungen.active{display:flex}
 
 /* ═══════════════════════════
    BOTTOM NAV
@@ -182,7 +182,7 @@ body{
 /* === MAIN CARD AREA === */
 .fc-main{
   flex:1;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;padding:16px 12px 8px;
+  justify-content:center;padding:16px 12px calc(16px + env(safe-area-inset-bottom,0px));
   gap:0;overflow:hidden;
 }
 .fc-ctr{
@@ -400,7 +400,7 @@ body{
 .re-btn:active{transform:translateY(2px);box-shadow:none}
 .re-btn.outline{background:var(--white);border:2px solid var(--border-d);color:var(--text);box-shadow:var(--shadow)}
 
-.reader-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.reader-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--nav-h) + 24px)}
 .reader-inner{padding:20px 18px 32px;max-width:700px;margin:0 auto}
 .text-body{font-size:17px;line-height:1.9;color:var(--text)}
 .text-body p{margin-bottom:14px}
@@ -741,7 +741,7 @@ mark{background:rgba(255,200,0,.4);padding:0 1px;border-radius:3px;color:inherit
    FEATURE: GRAMMAR EXERCISES
 ═══════════════════════════ */
 .grammar-tab{padding:0}
-.grammar-scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1}
+.grammar-scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding-bottom:calc(var(--nav-h) + 24px)}
 .grammar-section{padding:14px 14px;border-bottom:2px solid var(--border)}
 .grammar-section:last-child{border-bottom:none;padding-bottom:32px}
 .gs-title{
@@ -858,6 +858,22 @@ body.dark .wq-item, body.dark .struct-item { background: var(--border) }
 .assess-partial:active,.assess-partial:hover{background:var(--gold);color:#333}
 .assess-right{background:var(--green-bg);color:var(--green-d);box-shadow:0 2px 0 var(--green-d)}
 .assess-right:active,.assess-right:hover{background:var(--green);color:white}
+
+.ub-mode-btn{
+  padding:8px 14px;border-radius:20px;border:2px solid var(--border-d);
+  background:var(--white);font-family:'Nunito',sans-serif;font-size:13px;
+  font-weight:800;color:var(--text-muted);cursor:pointer;transition:all .12s;
+  white-space:nowrap;
+}
+.ub-mode-btn.active{background:var(--blue);border-color:var(--blue);color:var(--white)}
+
+.undo-btn{
+  padding:7px 18px;border-radius:20px;border:2px solid var(--border-d);
+  background:var(--white);font-family:'Nunito',sans-serif;font-size:13px;
+  font-weight:800;color:var(--text-muted);cursor:pointer;transition:all .15s;
+}
+.undo-btn:not(:disabled):hover{border-color:var(--orange);color:var(--orange-d);background:var(--orange-bg)}
+.undo-btn:disabled{opacity:.35;cursor:default}
 </style>
 </head>
 <body>
@@ -869,7 +885,7 @@ body.dark .wq-item, body.dark .struct-item { background: var(--border) }
     <button class="top-tab active" onclick="switchTab('home')" id="dtab-home">🏠 Heute</button>
     <button class="top-tab" onclick="switchTab('flashcards')" id="dtab-flashcards">🃏 Karten</button>
     <button class="top-tab" onclick="switchTab('reader')" id="dtab-reader">📖 Lesen</button>
-    <button class="top-tab" onclick="switchTab('grammar')" id="dtab-grammar">✏️ Grammatik</button>
+    <button class="top-tab" onclick="switchTab('ubungen')" id="dtab-ubungen">📝 Übungen</button>
     <button class="top-tab" onclick="switchTab('words')" id="dtab-words">📚 Wörter</button>
     <button class="top-tab" onclick="switchTab('cheatsheet')" id="dtab-cheatsheet">📋 Spickzettel</button>
   </div>
@@ -939,7 +955,7 @@ body.dark .wq-item, body.dark .struct-item { background: var(--border) }
       <button onclick="switchTab('flashcards')" style="padding:14px;border-radius:16px;border:2px solid var(--border-d);background:var(--white);font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;box-shadow:var(--shadow)">
         <span style="font-size:28px">🃏</span>Karten
       </button>
-      <button onclick="switchTab('grammar')" style="padding:14px;border-radius:16px;border:2px solid var(--border-d);background:var(--white);font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;box-shadow:var(--shadow)">
+      <button onclick="switchTab('ubungen')" style="padding:14px;border-radius:16px;border:2px solid var(--border-d);background:var(--white);font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;box-shadow:var(--shadow)">
         <span style="font-size:28px">✏️</span>Grammatik
       </button>
       <button onclick="switchTab('reader')" style="padding:14px;border-radius:16px;border:2px solid var(--border-d);background:var(--white);font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;box-shadow:var(--shadow)">
@@ -957,11 +973,6 @@ body.dark .wq-item, body.dark .struct-item { background: var(--border) }
 
   <div class="fc-topbar">
     <div class="seg">
-      <button class="seg-btn active" id="mpFlip" onclick="setFCMode('flip')">◧ Karten</button>
-      <button class="seg-btn" id="mpQuiz" onclick="setFCMode('quiz')">⊞ Quiz</button>
-      <button class="seg-btn" id="mpType" onclick="setFCMode('type')">✏️ Tippen</button>
-    </div>
-    <div class="seg" style="margin-left:6px">
       <button class="seg-btn active" id="dpDE" onclick="setFCDir('de')">DE→PT</button>
       <button class="seg-btn" id="dpPT" onclick="setFCDir('pt')">PT→DE</button>
     </div>
@@ -1021,7 +1032,9 @@ body.dark .wq-item, body.dark .struct-item { background: var(--border) }
         <span>Ja</span>
       </button>
     </div>
-    <div class="fc-hint-bar" id="fcHintBar">Antippen · wischen · Knöpfe zum Antworten</div>
+    <div class="fc-hint-bar" id="fcHintBar">
+      <button class="undo-btn" id="fcUndoBtn" onclick="undoFlip()" disabled>↩ Zurück</button>
+    </div>
     <div class="end-screen" id="fcFlipEnd">
       <div class="end-emoji">🎉</div>
       <div class="end-title">Stapel geschafft!</div>
@@ -1035,81 +1048,86 @@ body.dark .wq-item, body.dark .struct-item { background: var(--border) }
   </div>
 
   <!-- QUIZ -->
-  <div style="display:none;flex-direction:column;flex:1;overflow:hidden" id="fcQuizArea">
-    <div class="quiz-scroll">
-      <div class="fc-ctr" id="fcQuizCtr" style="margin-bottom:14px">Frage <strong id="fcQuizIdx">1</strong> von <strong id="fcQuizTotal">0</strong></div>
-      <div class="quiz-q" id="fcQuizQ">
-        <span class="quiz-cat-tag" id="fcQCat"></span>
-        <div class="quiz-word" id="fcQWord"></div>
-        <div class="quiz-prompt" id="fcQPrompt">WAS BEDEUTET DAS?</div>
-      </div>
-      <div class="quiz-opts" id="fcQOpts"></div>
-      <div class="quiz-fb" id="fcQFb"></div>
-      <button class="quiz-next" id="fcQNext" onclick="nextQuiz()">Weiter →</button>
-      <div class="end-screen" id="fcQuizEnd">
-        <div class="end-emoji" id="fcQEmoji">🏆</div>
-        <div class="end-title">Quiz geschafft!</div>
-        <div class="end-score" id="fcQuizScore"></div>
-        <div class="end-sub">Fortschritt gespeichert ✓</div>
-        <div class="end-btns">
-          <button class="end-btn primary" onclick="restartQuiz()">↺ Neues Quiz</button>
-          <button class="end-btn secondary" onclick="showStats()">📊 Statistik</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- TYPE MODE -->
-  <div style="display:none;flex-direction:column;align-items:center;flex:1;padding:16px 14px;overflow-y:auto" id="fcTypeArea">
-    <div class="fc-ctr" id="fcTypeCtr" style="margin-bottom:14px">Karte <strong id="fcTypeIdx">1</strong> von <strong id="fcTypeTotal">0</strong></div>
-    <div style="width:100%;max-width:560px;background:var(--white);border-radius:20px;padding:32px 20px 20px;text-align:center;position:relative;box-shadow:var(--shadow-lg);margin-bottom:14px">
-      <span style="position:absolute;top:12px;left:14px;font-size:11px;font-weight:800;padding:3px 9px;border-radius:10px;background:var(--blue-bg);color:var(--blue-d)" id="fcTypeCat"></span>
-      <div style="font-size:clamp(28px,6vw,44px);font-weight:900;color:var(--text);line-height:1.2;margin-bottom:8px" id="fcTypeQuestion"></div>
-      <div style="font-size:12px;font-weight:700;color:var(--text-muted)" id="fcTypePrompt">WIE HEISST DAS AUF PORTUGIESISCH?</div>
-    </div>
-    <div class="type-answer-wrap">
-      <input class="type-input" id="typeInput" type="text" placeholder="Antwort eingeben..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
-      <div class="type-result" id="typeResult"></div>
-      <button class="type-submit" id="typeSubmitBtn" onclick="submitTypeAnswer()">Überprüfen ✓</button>
-      <!-- self-assessment row (shown after reveal) -->
-      <div class="type-self-assess" id="typeSelfAssess">
-        <div class="type-self-label">Como foi? Avalia tu mesmo:</div>
-        <div class="type-assess-row">
-          <button class="assess-btn assess-wrong" onclick="typeAssess(1)">✗<br><span style="font-size:11px">Não sabia</span></button>
-          <button class="assess-btn assess-partial" onclick="typeAssess(3)">〜<br><span style="font-size:11px">Quase</span></button>
-          <button class="assess-btn assess-right" onclick="typeAssess(5)">✓<br><span style="font-size:11px">Sabia</span></button>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;width:100%">
-        <button class="type-skip" onclick="skipTypeCard()">Überspringen →</button>
-        <button class="type-submit" id="typeNextBtn" onclick="nextTypeCard()" style="display:none;flex:1;background:var(--green);box-shadow:0 3px 0 var(--green-d)">Weiter →</button>
-      </div>
-      <div class="type-hint" id="typeHint"></div>
-    </div>
-    <div class="end-screen" id="fcTypeEnd">
-      <div class="end-emoji">✏️</div>
-      <div class="end-title">Tippen abgeschlossen!</div>
-      <div class="end-score" id="fcTypeScore"></div>
-      <div class="end-btns">
-        <button class="end-btn primary" onclick="restartType()">↺ Nochmal</button>
-        <button class="end-btn secondary" onclick="showStats()">📊 Statistik</button>
-      </div>
-    </div>
-  </div>
 
 </div><!-- /flashcards -->
 
 <!-- ═══ GRAMMATIK ═══ -->
-<div class="tab-panel" id="panel-grammar">
+<div class="tab-panel" id="panel-ubungen">
   <div class="grammar-tab" style="display:flex;flex-direction:column;height:100%">
-    <div style="padding:12px 16px;background:var(--white);border-bottom:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:10px">
-      <div>
-        <div style="font-size:20px;font-weight:900;margin-bottom:2px">✏️ Grammatik</div>
-        <div style="font-size:12px;font-weight:600;color:var(--text-muted)" id="grammarSubtitle">20 zufällige Übungen aus 150</div>
+    <div style="padding:10px 14px 8px;background:var(--white);border-bottom:2px solid var(--border);flex-shrink:0">
+      <div style="font-size:18px;font-weight:900;margin-bottom:8px">📝 Übungen</div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap">
+        <button class="ub-mode-btn active" id="ubMode-grammar" onclick="setUbMode('grammar')">🧩 Grammatik</button>
+        <button class="ub-mode-btn" id="ubMode-quiz" onclick="setUbMode('quiz')">🎯 Quiz</button>
+        <button class="ub-mode-btn" id="ubMode-type" onclick="setUbMode('type')">✏️ Tippen</button>
+        <button class="ub-mode-btn" id="ubMode-trennbar" onclick="setUbMode('trennbar')">⚡ Trennbar</button>
       </div>
-      <button onclick="resetGrammar()" style="flex-shrink:0;padding:8px 14px;border-radius:12px;border:2px solid var(--blue);background:var(--blue-bg);color:var(--blue-d);font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer">🔀 Neu</button>
     </div>
+    <!-- MODE: Grammatik -->
     <div class="grammar-scroll" id="grammarScroll"></div>
+
+    <!-- MODE: Quiz (vocab) -->
+    <div style="display:none;flex-direction:column;flex:1;overflow:hidden" id="ubQuizArea">
+      <div class="quiz-scroll" id="ubQuizScroll">
+        <div class="fc-ctr" id="ubQuizCtr" style="margin-bottom:14px">Frage <strong id="ubQuizIdx">1</strong> von <strong id="ubQuizTotal">0</strong></div>
+        <div class="quiz-question" id="ubQuizQ">
+          <span class="quiz-cat-tag" id="ubQCat"></span>
+          <div class="quiz-word" id="ubQWord"></div>
+          <div class="quiz-prompt" id="ubQPrompt">WAS BEDEUTET DAS?</div>
+        </div>
+        <div class="quiz-opts" id="ubQOpts"></div>
+        <div class="quiz-fb" id="ubQFb"></div>
+        <button class="quiz-next" id="ubQNext" onclick="nextUbQuiz()">Weiter →</button>
+        <div class="end-screen" id="ubQuizEnd">
+          <div class="end-emoji" id="ubQEmoji">🏆</div>
+          <div class="end-title">Quiz geschafft!</div>
+          <div class="end-score" id="ubQuizScore"></div>
+          <div class="end-btns">
+            <button class="end-btn primary" onclick="restartUbQuiz()">↺ Nochmal</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODE: Tippen -->
+    <div style="display:none;flex-direction:column;align-items:center;flex:1;padding:16px 14px;overflow-y:auto;padding-bottom:calc(var(--nav-h) + 24px)" id="ubTypeArea">
+      <div class="fc-ctr" id="ubTypeCtr" style="margin-bottom:14px">Karte <strong id="ubTypeIdx">1</strong> von <strong id="ubTypeTotal">0</strong></div>
+      <div style="width:100%;max-width:560px;background:var(--white);border-radius:20px;padding:32px 20px 20px;text-align:center;position:relative;box-shadow:var(--shadow-lg);margin-bottom:14px">
+        <span style="position:absolute;top:12px;left:14px;font-size:11px;font-weight:800;padding:3px 9px;border-radius:10px;background:var(--blue-bg);color:var(--blue-d)" id="ubTypeCat"></span>
+        <div style="font-size:clamp(28px,6vw,40px);font-weight:900;color:var(--text);line-height:1.2;margin-bottom:8px" id="ubTypeQuestion"></div>
+        <div style="font-size:12px;font-weight:700;color:var(--text-muted)" id="ubTypePrompt">WIE HEISST DAS AUF PORTUGIESISCH?</div>
+      </div>
+      <div class="type-answer-wrap">
+        <input class="type-input" id="ubTypeInput" type="text" placeholder="Antwort eingeben..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+        <div class="type-result" id="ubTypeResult"></div>
+        <button class="type-submit" id="ubTypeSubmitBtn" onclick="submitUbType()">Überprüfen ✓</button>
+        <div class="type-self-assess" id="ubTypeSelfAssess">
+          <div class="type-self-label">Como foi?</div>
+          <div class="type-assess-row">
+            <button class="assess-btn assess-wrong" onclick="ubTypeAssess(1)">✗<br><span style="font-size:11px">Nicht gewusst</span></button>
+            <button class="assess-btn assess-partial" onclick="ubTypeAssess(3)">〜<br><span style="font-size:11px">Fast</span></button>
+            <button class="assess-btn assess-right" onclick="ubTypeAssess(5)">✓<br><span style="font-size:11px">Gewusst</span></button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;width:100%">
+          <button class="type-skip" onclick="skipUbType()">Überspringen →</button>
+          <button class="type-submit" id="ubTypeNextBtn" onclick="nextUbType()" style="display:none;flex:1;background:var(--green);box-shadow:0 3px 0 var(--green-d)">Weiter →</button>
+        </div>
+      </div>
+      <div class="end-screen" id="ubTypeEnd">
+        <div class="end-emoji">✏️</div>
+        <div class="end-title">Tippen fertig!</div>
+        <div class="end-score" id="ubTypeScore"></div>
+        <div class="end-btns">
+          <button class="end-btn primary" onclick="restartUbType()">↺ Nochmal</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODE: Trennbar interactive -->
+    <div style="display:none;flex-direction:column;flex:1;overflow:hidden" id="ubTrennbarArea">
+      <div class="grammar-scroll" id="trennbarScroll"></div>
+    </div>
   </div>
 </div>
 <div class="tab-panel" id="panel-reader">
@@ -1500,6 +1518,139 @@ body.dark .wq-item, body.dark .struct-item { background: var(--border) }
     </div>
   </div>
 
+  <!-- Trennbare & Untrennbare Verben -->
+  <div class="cs-card">
+    <div class="cs-card-title">Trennbare &amp; Untrennbare Verben</div>
+
+    <!-- concept explanation -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+      <div style="background:var(--green-bg);border-radius:12px;padding:12px">
+        <div style="font-size:11px;font-weight:800;color:var(--green-d);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px">&#x2702; Trennbar</div>
+        <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">an<span style="color:var(--green-d);font-size:16px;font-weight:900">|</span>rufen</div>
+        <div style="font-size:12px;color:var(--text-soft)">Praefix trennt sich ab</div>
+        <div style="font-family:'DM Mono',monospace;font-size:12px;margin-top:6px;color:var(--green-d)">Ich ruf<strong>e</strong>... <strong>an</strong></div>
+      </div>
+      <div style="background:var(--red-bg);border-radius:12px;padding:12px">
+        <div style="font-size:11px;font-weight:800;color:var(--red-d);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px">&#x26D4; Untrennbar</div>
+        <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px"><span style="color:var(--red-d)">be</span>suchen</div>
+        <div style="font-size:12px;color:var(--text-soft)">Praefix bleibt immer</div>
+        <div style="font-family:'DM Mono',monospace;font-size:12px;margin-top:6px;color:var(--red-d)">Ich <strong>be</strong>suche...</div>
+      </div>
+    </div>
+
+    <!-- prefix tables -->
+    <div style="display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:16px">
+
+      <!-- always trennbar -->
+      <div style="border:2px solid var(--green);border-radius:12px;overflow:hidden">
+        <div style="background:var(--green);color:white;padding:8px 12px;font-size:12px;font-weight:800;display:flex;align-items:center;gap:8px">
+          <span>&#x2702; Immer trennbar</span>
+          <span style="font-size:10px;opacity:.8;font-weight:600">Praefix bekommt den Akzent</span>
+        </div>
+        <div style="padding:10px 12px;display:flex;flex-wrap:wrap;gap:6px">
+          <span style="background:var(--green-bg);color:var(--green-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">ab-</span>
+          <span style="background:var(--green-bg);color:var(--green-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">an-</span>
+          <span style="background:var(--green-bg);color:var(--green-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">auf-</span>
+          <span style="background:var(--green-bg);color:var(--green-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">aus-</span>
+          <span style="background:var(--green-bg);color:var(--green-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">bei-</span>
+          <span style="background:var(--green-bg);color:var(--green-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">ein-</span>
+          <span style="background:var(--green-bg);color:var(--green-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">fest-</span>
+          <span style="background:var(--green-bg);color:var(--green-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">her-</span>
+          <span style="background:var(--green-bg);color:var(--green-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">hin-</span>
+          <span style="background:var(--green-bg);color:var(--green-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">mit-</span>
+          <span style="background:var(--green-bg);color:var(--green-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">nach-</span>
+          <span style="background:var(--green-bg);color:var(--green-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">vor-</span>
+          <span style="background:var(--green-bg);color:var(--green-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">weg-</span>
+          <span style="background:var(--green-bg);color:var(--green-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">zu-</span>
+          <span style="background:var(--green-bg);color:var(--green-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">zurueck-</span>
+        </div>
+        <div style="padding:4px 12px 10px;font-size:11px;color:var(--text-muted)">
+          <em>anrufen, aufstehen, einschlafen, mitkommen, zumachen, zurueckkehren...</em>
+        </div>
+      </div>
+
+      <!-- always untrennbar -->
+      <div style="border:2px solid var(--red);border-radius:12px;overflow:hidden">
+        <div style="background:var(--red);color:white;padding:8px 12px;font-size:12px;font-weight:800;display:flex;align-items:center;gap:8px">
+          <span>&#x26D4; Immer untrennbar</span>
+          <span style="font-size:10px;opacity:.8;font-weight:600">Kein Akzent auf Praefix</span>
+        </div>
+        <div style="padding:10px 12px;display:flex;flex-wrap:wrap;gap:6px">
+          <span style="background:var(--red-bg);color:var(--red-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">be-</span>
+          <span style="background:var(--red-bg);color:var(--red-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">emp-</span>
+          <span style="background:var(--red-bg);color:var(--red-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">ent-</span>
+          <span style="background:var(--red-bg);color:var(--red-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">er-</span>
+          <span style="background:var(--red-bg);color:var(--red-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">ge-</span>
+          <span style="background:var(--red-bg);color:var(--red-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">miss-</span>
+          <span style="background:var(--red-bg);color:var(--red-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">ver-</span>
+          <span style="background:var(--red-bg);color:var(--red-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">zer-</span>
+        </div>
+        <div style="padding:4px 12px 10px;font-size:11px;color:var(--text-muted)">
+          <em>besuchen, empfehlen, entscheiden, erkennen, gehoeren, vergessen, verstehen, zerstoeren...</em>
+        </div>
+      </div>
+
+      <!-- coringa / wechselpraefixe -->
+      <div style="border:2px solid var(--gold-d);border-radius:12px;overflow:hidden">
+        <div style="background:var(--gold);color:#333;padding:8px 12px;font-size:12px;font-weight:800;display:flex;align-items:center;gap:8px">
+          <span>&#9889; Wechselpraefixe — Coringas</span>
+          <span style="font-size:10px;opacity:.7;font-weight:600">Trennbar OU untrennbar</span>
+        </div>
+        <div style="padding:10px 12px;display:flex;flex-wrap:wrap;gap:6px">
+          <span style="background:var(--gold-bg);color:var(--gold-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">durch-</span>
+          <span style="background:var(--gold-bg);color:var(--gold-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">hinter-</span>
+          <span style="background:var(--gold-bg);color:var(--gold-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">ueber-</span>
+          <span style="background:var(--gold-bg);color:var(--gold-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">um-</span>
+          <span style="background:var(--gold-bg);color:var(--gold-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">unter-</span>
+          <span style="background:var(--gold-bg);color:var(--gold-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">wider-</span>
+          <span style="background:var(--gold-bg);color:var(--gold-d);padding:4px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700">wieder-</span>
+        </div>
+        <div style="padding:6px 12px 10px;font-size:11px;color:var(--text-muted)">
+          <div style="margin-bottom:3px">&#x2702; <em><strong>durch</strong>lesen</em> (trennbar) — ich lese das Buch <strong>durch</strong></div>
+          <div>&#x26D4; <em><strong>durch</strong>suchen</em> (untrennbar) — die Polizei <strong>durch</strong>sucht das Haus</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Regeln -->
+    <div style="font-size:11px;font-weight:800;color:var(--text-muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">Wichtige Regeln</div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
+      <div style="background:var(--bg);border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start">
+        <span style="font-size:16px;flex-shrink:0">1&#65039;&#8419;</span>
+        <div><div style="font-size:13px;font-weight:800;margin-bottom:2px">Praefix ans Ende im Hauptsatz</div><div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text-soft)">Ich <em>stehe</em> um 7 Uhr <strong>auf</strong>.</div></div>
+      </div>
+      <div style="background:var(--bg);border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start">
+        <span style="font-size:16px;flex-shrink:0">2&#65039;&#8419;</span>
+        <div><div style="font-size:13px;font-weight:800;margin-bottom:2px">Nach Modalverb: Infinitiv (nicht trennbar!)</div><div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text-soft)">Ich muss frueh <strong>aufstehen</strong>. &#x2714;</div><div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--red-d)">Ich muss frueh stehe auf. &#x2718;</div></div>
+      </div>
+      <div style="background:var(--bg);border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start">
+        <span style="font-size:16px;flex-shrink:0">3&#65039;&#8419;</span>
+        <div><div style="font-size:13px;font-weight:800;margin-bottom:2px">Perfekt: ge- zwischen Praefix und Stamm</div><div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text-soft)">auf + <strong>ge</strong> + standen = auf<strong>ge</strong>standen</div><div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--red-d)">Untrennbare: kein ge- — be<strong>sucht</strong> (nicht *be<strong>ge</strong>sucht)</div></div>
+      </div>
+      <div style="background:var(--bg);border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start">
+        <span style="font-size:16px;flex-shrink:0">4&#65039;&#8419;</span>
+        <div><div style="font-size:13px;font-weight:800;margin-bottom:2px">Nebensatz: Verb ans Ende, trennbar bleibt zusammen</div><div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text-soft)">...weil er frueher <strong>aufgestanden</strong> ist.</div></div>
+      </div>
+    </div>
+
+    <!-- Examples table -->
+    <div style="font-size:11px;font-weight:800;color:var(--text-muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">Haeufige Verben — Verbos Comuns</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+      <div style="background:var(--green-bg);border-radius:8px;padding:8px 10px"><div style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--green-d)">aufstehen</div><div style="font-size:11px;color:var(--text-soft)">levantar-se</div></div>
+      <div style="background:var(--green-bg);border-radius:8px;padding:8px 10px"><div style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--green-d)">anrufen</div><div style="font-size:11px;color:var(--text-soft)">ligar (telefonar)</div></div>
+      <div style="background:var(--green-bg);border-radius:8px;padding:8px 10px"><div style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--green-d)">einschlafen</div><div style="font-size:11px;color:var(--text-soft)">adormecer</div></div>
+      <div style="background:var(--green-bg);border-radius:8px;padding:8px 10px"><div style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--green-d)">mitkommen</div><div style="font-size:11px;color:var(--text-soft)">vir junto</div></div>
+      <div style="background:var(--green-bg);border-radius:8px;padding:8px 10px"><div style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--green-d)">aussteigen</div><div style="font-size:11px;color:var(--text-soft)">desembarcar</div></div>
+      <div style="background:var(--green-bg);border-radius:8px;padding:8px 10px"><div style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--green-d)">vorbereiten</div><div style="font-size:11px;color:var(--text-soft)">preparar</div></div>
+      <div style="background:var(--red-bg);border-radius:8px;padding:8px 10px"><div style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--red-d)">verstehen</div><div style="font-size:11px;color:var(--text-soft)">entender</div></div>
+      <div style="background:var(--red-bg);border-radius:8px;padding:8px 10px"><div style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--red-d)">vergessen</div><div style="font-size:11px;color:var(--text-soft)">esquecer</div></div>
+      <div style="background:var(--red-bg);border-radius:8px;padding:8px 10px"><div style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--red-d)">besuchen</div><div style="font-size:11px;color:var(--text-soft)">visitar</div></div>
+      <div style="background:var(--red-bg);border-radius:8px;padding:8px 10px"><div style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--red-d)">erkennen</div><div style="font-size:11px;color:var(--text-soft)">reconhecer</div></div>
+      <div style="background:var(--red-bg);border-radius:8px;padding:8px 10px"><div style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--red-d)">empfehlen</div><div style="font-size:11px;color:var(--text-soft)">recomendar</div></div>
+      <div style="background:var(--red-bg);border-radius:8px;padding:8px 10px"><div style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--red-d)">entscheiden</div><div style="font-size:11px;color:var(--text-soft)">decidir</div></div>
+    </div>
+  </div>
+
 
 </div>
 </div><!-- /cheatsheet -->
@@ -1515,8 +1666,8 @@ body.dark .wq-item, body.dark .struct-item { background: var(--border) }
   <button class="nav-btn" onclick="switchTab('flashcards')" id="bnav-flashcards">
     <span class="nav-ico">🃏</span><span class="nav-lbl">Karten</span>
   </button>
-  <button class="nav-btn" onclick="switchTab('grammar')" id="bnav-grammar">
-    <span class="nav-ico">✏️</span><span class="nav-lbl">Grammatik</span>
+  <button class="nav-btn" onclick="switchTab('ubungen')" id="bnav-ubungen">
+    <span class="nav-ico">📝</span><span class="nav-lbl">Übungen</span>
   </button>
   <button class="nav-btn" onclick="switchTab('reader')" id="bnav-reader">
     <span class="nav-ico">📖</span><span class="nav-lbl">Lesen</span>
@@ -2002,6 +2153,33 @@ const GRAMMAR_EX_ALL = [
 {section:'Satzstruktur & Konjunktionen',id:'g148',sentence:'Ich mag Kaffee, ___ er mag Tee.',opts:['weil','aber','dass','obwohl'],correct:'aber',explain:'aber = Gegensatz → normale Wortstellung'},
 {section:'Satzstruktur & Konjunktionen',id:'g149',sentence:'Sie sagt, ___ sie müde ist.',opts:['weil','aber','dass','obwohl'],correct:'dass',explain:'dass leitet Objektsatz ein → Verb ans Ende'},
 {section:'Satzstruktur & Konjunktionen',id:'g150',sentence:'Er arbeitet, ___ er krank ist.',opts:['weil','aber','obwohl','dass'],correct:'obwohl',explain:'obwohl = Konzessiv → Verb ans Ende des Nebensatzes'},
+
+// ── TRENNBARE vs UNTRENNBARE VERBEN (25) ──
+{section:'Trennbare Verben — Wortstellung',id:'tv1',sentence:'Ich ___ um 7 Uhr ___.',opts:['stehe...auf','aufstehe...','aufzustehen...','stehen...auf'],correct:'stehe...auf',explain:'aufstehen ist trennbar: Praefix (auf) ans Ende → stehe...auf'},
+{section:'Trennbare Verben — Wortstellung',id:'tv2',sentence:'Er ___ das Licht ___.',opts:['macht...an','anmacht...','anmachen...','macht an...'],correct:'macht...an',explain:'anmachen ist trennbar: → macht...an'},
+{section:'Trennbare Verben — Wortstellung',id:'tv3',sentence:'Sie ___ ihre Freundin ___.',opts:['ruft...an','anruft...','anrufet...','ruf...an'],correct:'ruft...an',explain:'anrufen ist trennbar: → ruft...an'},
+{section:'Trennbare Verben — Wortstellung',id:'tv4',sentence:'Wann ___ der Zug ___?',opts:['fährt...ab','abfährt...','fährt ab...','abfahrt...'],correct:'fährt...ab',explain:'abfahren ist trennbar: → fährt...ab'},
+{section:'Trennbare Verben — Wortstellung',id:'tv5',sentence:'Ich ___ mein Handy ___.',opts:['mache...aus','ausmache...','machen...aus','aus...mache'],correct:'mache...aus',explain:'ausmachen ist trennbar: → mache...aus'},
+{section:'Trennbare Verben — Wortstellung',id:'tv6',sentence:'Er ___ seinen Bruder ___.',opts:['lädt...ein','einlädt...','laden...ein','einladet...'],correct:'lädt...ein',explain:'einladen ist trennbar: → lädt...ein'},
+{section:'Trennbare Verben — Wortstellung',id:'tv7',sentence:'Wir ___ um 8 Uhr ___.',opts:['steigen...aus','aussteigen...','steigen aus...','aussteigt...'],correct:'steigen...aus',explain:'aussteigen ist trennbar: → steigen...aus'},
+{section:'Trennbare Verben — Wortstellung',id:'tv8',sentence:'Sie ___ die Hausaufgaben ___.',opts:['bereitet...vor','vorbereitet...','vorbereiten...','bereitet vor...'],correct:'bereitet...vor',explain:'vorbereiten ist trennbar: → bereitet...vor'},
+{section:'Trennbare Verben — Wortstellung',id:'tv9',sentence:'Er ___ die Tür ___.',opts:['macht...zu','zumacht...','macht zu...','zumachen...'],correct:'macht...zu',explain:'zumachen ist trennbar: → macht...zu'},
+{section:'Trennbare Verben — Wortstellung',id:'tv10',sentence:'Ich ___ am Montag ___.',opts:['komme...zurück','zurückkomme...','zurückzukommen...','komme zurück...'],correct:'komme...zurück',explain:'zurückkommen ist trennbar: → komme...zurück'},
+{section:'Trennbare Verben — Modalverb',id:'tv11',sentence:'Ich muss früh ___.',opts:['aufstehen','stehe...auf','aufsteht','stehen...auf'],correct:'aufstehen',explain:'Nach Modalverb kommt Infinitiv ungetrennt: aufstehen'},
+{section:'Trennbare Verben — Modalverb',id:'tv12',sentence:'Er will das Licht ___.',opts:['anmachen','macht...an','machen...an','anmacht'],correct:'anmachen',explain:'Nach will kommt Infinitiv: anmachen'},
+{section:'Trennbare Verben — Modalverb',id:'tv13',sentence:'Wir möchten um 18 Uhr ___.',opts:['ankommen','kommen...an','ankommen...','komme...an'],correct:'ankommen',explain:'Nach möchten kommt Infinitiv: ankommen'},
+{section:'Trennbare Verben — Modalverb',id:'tv14',sentence:'Kannst du mich ___?',opts:['anrufen','rufst...an','rufe...an','anrufst'],correct:'anrufen',explain:'Nach Modalverb Infinitiv: anrufen'},
+{section:'Trennbare Verben — Perfekt',id:'tv15',sentence:'Ich bin früh ___.',opts:['aufgestanden','aufgestanden','gestanden auf','auf gestanden'],correct:'aufgestanden',explain:'Perfekt trennbar: auf + ge + standen = aufgestanden (ge- zwischen Praefix und Stamm)'},
+{section:'Trennbare Verben — Perfekt',id:'tv16',sentence:'Er hat mich ___.',opts:['angerufen','gerufen an','anrufte','gerufan an'],correct:'angerufen',explain:'Perfekt trennbar: an + ge + rufen = angerufen'},
+{section:'Trennbare Verben — Perfekt',id:'tv17',sentence:'Wir sind um 8 Uhr ___.',opts:['eingestiegen','gestiegen ein','eingestiegt','ge-eingestiegen'],correct:'eingestiegen',explain:'Perfekt trennbar: ein + ge + stiegen = eingestiegen'},
+{section:'Trennbare Verben — Perfekt',id:'tv18',sentence:'Sie hat das Licht ___.',opts:['ausgemacht','gemacht aus','ausgmacht','aus gemacht'],correct:'ausgemacht',explain:'Perfekt trennbar: aus + ge + macht = ausgemacht'},
+{section:'Untrennbare Verben — Kein ge-',id:'tv19',sentence:'Er hat das Buch ___.',opts:['verstanden','geverstanden','vergestanden','verstandete'],correct:'verstanden',explain:'verstehen ist untrennbar → kein ge- im Perfekt: verstanden (nicht *geverstanden)'},
+{section:'Untrennbare Verben — Kein ge-',id:'tv20',sentence:'Sie hat mich ___.',opts:['besucht','gebesucht','besuchtet','be-gesucht'],correct:'besucht',explain:'besuchen ist untrennbar → Perfekt ohne ge-: besucht'},
+{section:'Untrennbare Verben — Kein ge-',id:'tv21',sentence:'Ich habe den Weg ___.',opts:['vergessen','gevergessen','vergessed','ver-gessen'],correct:'vergessen',explain:'vergessen ist untrennbar → Perfekt ohne ge-: vergessen'},
+{section:'Untrennbare Verben — Kein ge-',id:'tv22',sentence:'Er hat das Hotel ___.',opts:['empfohlen','geempfohlen','empfehlt','empgefohlen'],correct:'empfohlen',explain:'empfehlen ist untrennbar → Perfekt ohne ge-: empfohlen'},
+{section:'Trennbar oder Untrennbar?',id:'tv23',sentence:'Der Praefix "be-" ist ___.',opts:['immer untrennbar','immer trennbar','manchmal trennbar','ein Wechselpraefix'],correct:'immer untrennbar',explain:'be-, ver-, er-, ge-, ent-, emp-, miss-, zer- sind immer untrennbar'},
+{section:'Trennbar oder Untrennbar?',id:'tv24',sentence:'Der Praefix "auf-" ist ___.',opts:['immer trennbar','immer untrennbar','ein Wechselpraefix','manchmal trennbar'],correct:'immer trennbar',explain:'ab-, an-, auf-, aus-, bei-, ein-, mit-, vor-, zu- sind immer trennbar'},
+{section:'Trennbar oder Untrennbar?',id:'tv25',sentence:'Der Praefix "über-" ist ___.',opts:['ein Wechselpraefix','immer trennbar','immer untrennbar','kein Praefix'],correct:'ein Wechselpraefix',explain:'durch-, über-, um-, unter-, wider-, wieder- sind Wechselpraefixe — koennen trennbar oder untrennbar sein'},
 ];
 
 // ── SESSION LOGIC ──
@@ -2149,8 +2327,24 @@ function switchTab(tab){
   const bn=document.getElementById('bnav-'+tab);if(bn)bn.classList.add('active');
   const dt=document.getElementById('dtab-'+tab);if(dt)dt.classList.add('active');
   if(tab==='home')refreshHome();
-  if(tab==='grammar')renderGrammar();
+  if(tab==='ubungen'){setUbMode(currentUbMode||'grammar');}
   updateLayout();
+}
+let currentUbMode='grammar';
+function setUbMode(mode){
+  currentUbMode=mode;
+  ['grammar','quiz','type','trennbar'].forEach(m=>{
+    const btn=document.getElementById('ubMode-'+m);
+    if(btn)btn.className='ub-mode-btn'+(m===mode?' active':'');
+  });
+  document.getElementById('grammarScroll').style.display=mode==='grammar'?'':'none';
+  const qa=document.getElementById('ubQuizArea');if(qa)qa.style.display=mode==='quiz'?'flex':'none';
+  const ta=document.getElementById('ubTypeArea');if(ta)ta.style.display=mode==='type'?'flex':'none';
+  const tra=document.getElementById('ubTrennbarArea');if(tra)tra.style.display=mode==='trennbar'?'flex':'none';
+  if(mode==='grammar')renderGrammar();
+  else if(mode==='quiz')initUbQuiz();
+  else if(mode==='type')initUbType();
+  else if(mode==='trennbar')renderTrennbarEx();
 }
 
 // ════════════════════════════════════════════
@@ -2275,7 +2469,7 @@ function renderWords(cat,q){
 // FLASHCARDS
 // ════════════════════════════════════════════
 let fcMode='flip',fcDir='de',fcCat='all',fcHideKnown=true;
-let fcDeck=[],fcFlipIdx=0,fcRevealed=false;
+let fcDeck=[],fcFlipIdx=0,fcRevealed=false,fcUndoStack=[];
 let fcQuizIdx=0,fcQuizLocked=false;
 let fcSessKnew=0,fcSessWrong=0;
 
@@ -2299,30 +2493,22 @@ function buildFCDeck(cat='all'){
 function shuffleArr(a){const r=[...a];for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]];}return r;}
 
 function setFCMode(m){
-  fcMode=m;
-  ['flip','quiz','type'].forEach(x=>{
-    document.getElementById('mp'+x.charAt(0).toUpperCase()+x.slice(1)).className='seg-btn'+(m===x?' active':'');
-  });
-  document.getElementById('fcFlipArea').style.display=m==='flip'?'':'none';
-  document.getElementById('fcQuizArea').style.display=m==='quiz'?'flex':'none';
-  document.getElementById('fcTypeArea').style.display=m==='type'?'flex':'none';
-  if(m==='flip')startFlipMode();
-  else if(m==='quiz')startQuizMode();
-  else startTypeMode();
+  fcMode='flip';
+  startFlipMode();
 }
 function setFCDir(d){
   fcDir=d;
   document.getElementById('dpDE').className='seg-btn'+(d==='de'?' active':'');
   document.getElementById('dpPT').className='seg-btn'+(d==='pt'?' active':'');
-  fcDeck=shuffleArr(buildFCDeck(fcCat));fcFlipIdx=0;fcQuizIdx=0;fcTypeIdx=0;
-  if(fcMode==='flip')startFlipMode();else if(fcMode==='quiz')startQuizMode();else startTypeMode();
+  fcDeck=shuffleArr(buildFCDeck(fcCat));fcFlipIdx=0;
+  startFlipMode();
 }
 function setFCCat(cat){
   fcCat=cat;
   document.querySelectorAll('.cat-pill').forEach(c=>c.classList.remove('active'));
   document.getElementById(cat==='all'?'fcchip_all':'fcchip_'+cat)?.classList.add('active');
-  fcDeck=shuffleArr(buildFCDeck(cat));fcFlipIdx=0;fcQuizIdx=0;fcTypeIdx=0;
-  if(fcMode==='flip')startFlipMode();else if(fcMode==='quiz')startQuizMode();else startTypeMode();
+  fcDeck=shuffleArr(buildFCDeck(cat));fcFlipIdx=0;
+  startFlipMode();
 }
 function toggleHideKnown(){
   fcHideKnown=!fcHideKnown;
@@ -2330,9 +2516,9 @@ function toggleHideKnown(){
   b.textContent=fcHideKnown?'✓ Gelernte aus':'○ Gelernte ein';
   b.className=fcHideKnown?'known-btn':'known-btn off';
   fcDeck=shuffleArr(buildFCDeck(fcCat));fcFlipIdx=0;
-  if(fcMode==='flip')startFlipMode();else if(fcMode==='quiz')startQuizMode();else startTypeMode();
+  startFlipMode();
 }
-function shuffleFC(){fcDeck=shuffleArr([...fcDeck]);fcFlipIdx=0;fcQuizIdx=0;fcTypeIdx=0;if(fcMode==='flip')renderFlip();else if(fcMode==='quiz')renderQuizCard();else renderTypeCard();}
+function shuffleFC(){fcDeck=shuffleArr([...fcDeck]);fcFlipIdx=0;renderFlip();}
 
 function updateFCSub(){
   const tk=Object.keys(P.known).length;
@@ -2345,7 +2531,7 @@ function updateFCProg(cur,tot){document.getElementById('fcProgressFill').style.w
 
 // ── FLIP ──
 function startFlipMode(){
-  fcFlipIdx=0;fcRevealed=false;fcSessKnew=0;fcSessWrong=0;
+  fcFlipIdx=0;fcRevealed=false;fcSessKnew=0;fcSessWrong=0;fcUndoStack=[];
   document.getElementById('fcFlipEnd').classList.remove('show');
   document.getElementById('fcFlipEnd').style.display='none';
   const sw=document.querySelector('.fc-swipe');if(sw)sw.style.display='flex';
@@ -2380,6 +2566,8 @@ function renderFlip(){
   document.getElementById('fcFlipTotal').textContent=fcDeck.length;
   // auto-speak if DE direction
   updateFCProg(fcFlipIdx,fcDeck.length);updateFCSub();
+  // undo only available after an answer
+  const _ub=document.getElementById('fcUndoBtn');if(_ub&&!fcUndoStack.length)_ub.disabled=true;
 }
 function revealCard(){
   if(fcRevealed)return;fcRevealed=true;
@@ -2390,6 +2578,9 @@ function revealCard(){
 }
 function fcAnswer(knew){
   if(fcFlipIdx>=fcDeck.length)return;
+  // push undo snapshot before recording
+  fcUndoStack.push({idx:fcFlipIdx,knew,sessKnew:fcSessKnew,sessWrong:fcSessWrong});
+  if(fcUndoStack.length>1)fcUndoStack.shift(); // keep only last 1
   recordResult(fcDeck[fcFlipIdx].id,knew);
   if(knew)fcSessKnew++;else fcSessWrong++;
   const inner=document.getElementById('fcCardInner');
@@ -2404,6 +2595,28 @@ function fcAnswer(knew){
     if(fcFlipIdx>=fcDeck.length){showFlipEnd();return;}
     renderFlip();
   },220);
+  // enable undo
+  const ub=document.getElementById('fcUndoBtn');
+  if(ub)ub.disabled=false;
+}
+function undoFlip(){
+  if(!fcUndoStack.length)return;
+  const snap=fcUndoStack.pop();
+  const card=fcDeck[snap.idx];
+  if(card){
+    if(P.history[card.id]&&P.history[card.id].length)P.history[card.id].shift();
+    fcSessKnew=snap.sessKnew;
+    fcSessWrong=snap.sessWrong;
+    if(snap.knew){P.totalKnew=Math.max(0,P.totalKnew-1);P.streak=Math.max(0,P.streak-1);}
+    else P.totalWrong=Math.max(0,P.totalWrong-1);
+    delete P.srs[card.id];
+    saveP();updateTopbar();
+  }
+  fcFlipIdx=snap.idx;
+  fcRevealed=false;
+  renderFlip(); // shows card face-down, fresh
+  const ub=document.getElementById('fcUndoBtn');
+  if(ub)ub.disabled=true;
 }
 function toggleCardKnown(){
   if(fcFlipIdx>=fcDeck.length)return;
@@ -2930,6 +3143,375 @@ function initDark(){
     document.getElementById('darkToggleBtn').textContent = '☀️';
   }
 }
+
+
+// ════════════════════════════════════════════
+// ÜBUNGEN — QUIZ MODE
+// ════════════════════════════════════════════
+let ubQuizDeck=[],ubQuizIdx=0,ubQuizLocked=false,ubQuizRight=0,ubQuizWrong=0;
+function initUbQuiz(){
+  ubQuizDeck=shuffleArr([...ALL_CARDS]).slice(0,30);
+  ubQuizIdx=0;ubQuizRight=0;ubQuizWrong=0;ubQuizLocked=false;
+  const end=document.getElementById('ubQuizEnd');
+  if(end){end.classList.remove('show');end.style.display='none';}
+  const q=document.getElementById('ubQuizQ');if(q)q.style.display='';
+  const o=document.getElementById('ubQOpts');if(o)o.style.display='';
+  const ctr=document.getElementById('ubQuizCtr');if(ctr)ctr.style.display='';
+  renderUbQuiz();
+}
+function renderUbQuiz(){
+  if(!ubQuizDeck.length||ubQuizIdx>=ubQuizDeck.length){showUbQuizEnd();return;}
+  ubQuizLocked=false;
+  const card=ubQuizDeck[ubQuizIdx];
+  document.getElementById('ubQuizIdx').textContent=ubQuizIdx+1;
+  document.getElementById('ubQuizTotal').textContent=ubQuizDeck.length;
+  document.getElementById('ubQCat').textContent=card.catLabel;
+  document.getElementById('ubQWord').textContent=card.de;
+  document.getElementById('ubQPrompt').textContent='WAS BEDEUTET DAS AUF PORTUGIESISCH?';
+  const wrongs=shuffleArr(ubQuizDeck.filter((_,i)=>i!==ubQuizIdx)).slice(0,3).map(x=>x.pt);
+  const opts=shuffleArr([card.pt,...wrongs]);
+  const cont=document.getElementById('ubQOpts');cont.innerHTML='';
+  ['A','B','C','D'].forEach((l,i)=>{
+    if(i>=opts.length)return;
+    const b=document.createElement('button');b.className='quiz-opt';
+    b.innerHTML=`<span class="opt-ltr">${l}</span>${opts[i]}`;
+    b.onclick=()=>pickUbQuiz(b,opts[i],card.pt,card.id);
+    cont.appendChild(b);
+  });
+  document.getElementById('ubQFb').className='quiz-fb';
+  document.getElementById('ubQNext').className='quiz-next';
+  // scroll to top
+  const scroll=document.getElementById('ubQuizScroll');
+  if(scroll)scroll.scrollTop=0;
+}
+function pickUbQuiz(btn,sel,ans,id){
+  if(ubQuizLocked)return;ubQuizLocked=true;
+  document.querySelectorAll('#ubQOpts .quiz-opt').forEach(b=>b.classList.add('locked'));
+  const ok=sel===ans;
+  btn.classList.add(ok?'correct':'wrong');
+  if(!ok)document.querySelectorAll('#ubQOpts .quiz-opt').forEach(b=>{if(b.textContent.includes(ans))b.classList.add('correct');});
+  const fb=document.getElementById('ubQFb');
+  fb.textContent=ok?'✓ Richtig! 🎉':'✗ Richtige Antwort: '+ans;
+  fb.className='quiz-fb show '+(ok?'ok':'bad');
+  recordResult(id,ok);
+  if(ok)ubQuizRight++;else ubQuizWrong++;
+  document.getElementById('ubQNext').className='quiz-next show';
+}
+function nextUbQuiz(){ubQuizIdx++;renderUbQuiz();}
+function showUbQuizEnd(){
+  document.getElementById('ubQuizQ').style.display='none';
+  document.getElementById('ubQOpts').style.display='none';
+  document.getElementById('ubQuizCtr').style.display='none';
+  const end=document.getElementById('ubQuizEnd');
+  end.style.display='flex';end.classList.add('show');
+  const tot=ubQuizRight+ubQuizWrong,pct=tot>0?Math.round(ubQuizRight/tot*100):0;
+  document.getElementById('ubQEmoji').textContent=pct>=80?'🏆':pct>=50?'📚':'💪';
+  document.getElementById('ubQuizScore').innerHTML=`✓ <strong>${ubQuizRight}</strong> richtig · ✗ <strong>${ubQuizWrong}</strong> falsch · ${pct}%`;
+}
+function restartUbQuiz(){initUbQuiz();}
+
+// ════════════════════════════════════════════
+// ÜBUNGEN — TIPPEN MODE
+// ════════════════════════════════════════════
+let ubTypeDeck=[],ubTypeIdx=0,ubTypeRight=0,ubTypeWrong=0,ubTypePartial=0,ubTypeAnswered=false;
+function initUbType(){
+  ubTypeDeck=shuffleArr([...ALL_CARDS]).slice(0,20);
+  ubTypeIdx=0;ubTypeRight=0;ubTypeWrong=0;ubTypePartial=0;ubTypeAnswered=false;
+  const end=document.getElementById('ubTypeEnd');
+  if(end){end.classList.remove('show');end.style.display='none';}
+  const wrap=document.getElementById('ubTypeArea').querySelector('.type-answer-wrap');
+  if(wrap)wrap.style.display='flex';
+  document.getElementById('ubTypeCtr').style.display='';
+  renderUbType();
+}
+function renderUbType(){
+  if(!ubTypeDeck.length||ubTypeIdx>=ubTypeDeck.length){showUbTypeEnd();return;}
+  const card=ubTypeDeck[ubTypeIdx];
+  ubTypeAnswered=false;
+  document.getElementById('ubTypeIdx').textContent=ubTypeIdx+1;
+  document.getElementById('ubTypeTotal').textContent=ubTypeDeck.length;
+  document.getElementById('ubTypeCat').textContent=card.catLabel;
+  document.getElementById('ubTypeQuestion').textContent=card.de;
+  document.getElementById('ubTypePrompt').textContent='WIE HEISST DAS AUF PORTUGIESISCH?';
+  const inp=document.getElementById('ubTypeInput');
+  inp.value='';inp.className='type-input';inp.disabled=false;
+  document.getElementById('ubTypeResult').className='type-result';
+  document.getElementById('ubTypeSelfAssess').classList.remove('show');
+  document.getElementById('ubTypeSubmitBtn').style.display='';
+  document.getElementById('ubTypeSubmitBtn').disabled=false;
+  document.getElementById('ubTypeNextBtn').style.display='none';
+  setTimeout(()=>inp.focus(),100);
+}
+function submitUbType(){
+  if(ubTypeAnswered)return;
+  const card=ubTypeDeck[ubTypeIdx];
+  const correct=card.pt;
+  const given=document.getElementById('ubTypeInput').value.trim();
+  if(!given)return;
+  ubTypeAnswered=true;
+  const ok=given===correct;
+  const inp=document.getElementById('ubTypeInput');
+  inp.className='type-input '+(ok?'correct':'wrong');
+  inp.disabled=true;
+  document.getElementById('ubTypeSubmitBtn').style.display='none';
+  const res=document.getElementById('ubTypeResult');
+  if(ok){
+    res.textContent='✓ Richtig!';res.className='type-result show ok';
+    recordResultQuality(card.id,5);
+    ubTypeRight++;
+    document.getElementById('ubTypeNextBtn').style.display='block';
+  } else {
+    res.innerHTML=`✗ Richtige Antwort: <strong>${correct}</strong>`;
+    res.className='type-result show bad';
+    document.getElementById('ubTypeSelfAssess').classList.add('show');
+  }
+}
+function ubTypeAssess(quality){
+  const card=ubTypeDeck[ubTypeIdx];
+  recordResultQuality(card.id,quality);
+  document.getElementById('ubTypeSelfAssess').classList.remove('show');
+  if(quality===1)ubTypeWrong++;
+  else if(quality===3)ubTypePartial++;
+  else ubTypeRight++;
+  document.getElementById('ubTypeNextBtn').style.display='block';
+}
+function skipUbType(){
+  if(!ubTypeAnswered){
+    const correct=ubTypeDeck[ubTypeIdx].pt;
+    document.getElementById('ubTypeInput').value=correct;
+    submitUbType();
+  } else nextUbType();
+}
+function nextUbType(){ubTypeIdx++;renderUbType();}
+function showUbTypeEnd(){
+  const wrap=document.getElementById('ubTypeArea').querySelector('.type-answer-wrap');
+  if(wrap)wrap.style.display='none';
+  document.getElementById('ubTypeCtr').style.display='none';
+  const end=document.getElementById('ubTypeEnd');
+  end.style.display='flex';end.classList.add('show');
+  const tot=ubTypeRight+ubTypeWrong+ubTypePartial,pct=tot>0?Math.round((ubTypeRight+ubTypePartial*0.5)/tot*100):0;
+  const partStr=ubTypePartial>0?` · 〜 <strong>${ubTypePartial}</strong> fast`:'';
+  document.getElementById('ubTypeScore').innerHTML=`✓ <strong>${ubTypeRight}</strong> richtig${partStr} · ✗ <strong>${ubTypeWrong}</strong> falsch`;
+}
+function restartUbType(){initUbType();}
+// Enter key for ubType
+document.addEventListener('keydown',e=>{
+  const ta=document.getElementById('ubTypeArea');
+  if(ta&&ta.style.display!=='none'&&document.activeElement.id==='ubTypeInput'){
+    if(e.key==='Enter'){if(!ubTypeAnswered)submitUbType();else nextUbType();}
+  }
+});
+
+// ════════════════════════════════════════════
+// ÜBUNGEN — TRENNBARE VERBEN INTERACTIVE
+// ════════════════════════════════════════════
+const TRENNBAR_EX = [
+  {id:'t1',  pronoun:'er',  mid:'das Licht',        prefix:'an',     stem:'macht',    verb:'anmachen',      pt:'ligar'},
+  {id:'t2',  pronoun:'ich', mid:'um 7 Uhr',          prefix:'auf',    stem:'stehe',    verb:'aufstehen',     pt:'levantar-se'},
+  {id:'t3',  pronoun:'sie', mid:'ihre Freundin',     prefix:'an',     stem:'ruft',     verb:'anrufen',       pt:'telefonar'},
+  {id:'t4',  pronoun:'wir', mid:'um 8 Uhr',          prefix:'aus',    stem:'steigen',  verb:'aussteigen',    pt:'desembarcar'},
+  {id:'t5',  pronoun:'er',  mid:'seinen Bruder',     prefix:'ein',    stem:'lädt',     verb:'einladen',      pt:'convidar'},
+  {id:'t6',  pronoun:'ich', mid:'mein Handy',        prefix:'aus',    stem:'mache',    verb:'ausmachen',     pt:'desligar'},
+  {id:'t7',  pronoun:'sie', mid:'die Aufgaben',      prefix:'vor',    stem:'bereitet', verb:'vorbereiten',   pt:'preparar'},
+  {id:'t8',  pronoun:'er',  mid:'nächste Woche',     prefix:'zurück', stem:'kommt',    verb:'zurückkommen',  pt:'voltar'},
+  {id:'t9',  pronoun:'ich', mid:'mein Buch',         prefix:'auf',    stem:'mache',    verb:'aufmachen',     pt:'abrir'},
+  {id:'t10', pronoun:'sie', mid:'das Fenster',       prefix:'zu',     stem:'macht',    verb:'zumachen',      pt:'fechar'},
+  {id:'t11', pronoun:'ich', mid:'meinen Mantel',     prefix:'an',     stem:'ziehe',    verb:'anziehen',      pt:'vestir'},
+  {id:'t12', pronoun:'er',  mid:'früh',              prefix:'auf',    stem:'wacht',    verb:'aufwachen',     pt:'acordar'},
+  {id:'t13', pronoun:'wir', mid:'um 22 Uhr',         prefix:'ein',    stem:'schlafen', verb:'einschlafen',   pt:'adormecer'},
+  {id:'t14', pronoun:'sie', mid:'ihre Freunde',      prefix:'mit',    stem:'bringt',   verb:'mitbringen',    pt:'trazer junto'},
+  {id:'t15', pronoun:'er',  mid:'das Formular',      prefix:'aus',    stem:'füllt',    verb:'ausfüllen',     pt:'preencher'},
+  {id:'t16', pronoun:'du',  mid:'die Tür',           prefix:'auf',    stem:'machst',   verb:'aufmachen',     pt:'abrir'},
+  {id:'t17', pronoun:'ich', mid:'um 6 Uhr',          prefix:'auf',    stem:'wache',    verb:'aufwachen',     pt:'acordar'},
+  {id:'t18', pronoun:'wir', mid:'den Bus',           prefix:'ab',     stem:'warten',   verb:'abwarten',      pt:'esperar'},
+  {id:'t19', pronoun:'er',  mid:'seine Jacke',       prefix:'aus',    stem:'zieht',    verb:'ausziehen',     pt:'tirar a roupa'},
+  {id:'t20', pronoun:'sie', mid:'ihre Mutter',       prefix:'an',     stem:'ruft',     verb:'anrufen',       pt:'ligar'},
+];
+let trennbarAnswers={};
+
+function renderTrennbarEx(){
+  const scroll=document.getElementById('trennbarScroll');
+  if(!scroll||scroll.children.length>0)return;
+  scroll.innerHTML='';
+
+  // header
+  const hdr=document.createElement('div');
+  hdr.style.cssText='padding:12px 16px 10px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--border);background:var(--white)';
+  hdr.innerHTML='<div><div style="font-size:15px;font-weight:900">⚡ Trennbare Verben</div><div style="font-size:12px;color:var(--text-muted);font-weight:600">Wähle die richtige Form</div></div>';
+  const rb=document.createElement('button');
+  rb.textContent='🔀 Neue Runde';
+  rb.style.cssText='padding:7px 14px;border-radius:10px;border:2px solid var(--blue);background:var(--blue-bg);color:var(--blue-d);font-family:Nunito,sans-serif;font-size:12px;font-weight:800;cursor:pointer;flex-shrink:0';
+  rb.onclick=resetTrennbar;
+  hdr.appendChild(rb);
+  scroll.appendChild(hdr);
+
+  shuffleArr([...TRENNBAR_EX]).forEach(ex=>{
+    const answered = trennbarAnswers[ex.id]; // null | 'correct' | 'wrong'
+    const card=document.createElement('div');
+    card.id='trex_'+ex.id;
+    const borderCol = answered==='correct'?'var(--green)':answered==='wrong'?'var(--red)':'var(--border)';
+    card.style.cssText='margin:12px 14px;border-radius:16px;border:2px solid '+borderCol+';background:var(--white);overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.06);transition:border-color .2s';
+
+    // ── Sentence ──
+    const sentDiv=document.createElement('div');
+    sentDiv.style.cssText='padding:16px 16px 10px;border-bottom:2px solid var(--border)';
+
+    // verb hint
+    const verbHint=document.createElement('div');
+    verbHint.style.cssText='display:inline-block;background:var(--blue-bg);color:var(--blue-d);font-family:DM Mono,monospace;font-size:12px;font-weight:700;padding:3px 10px;border-radius:8px;margin-bottom:10px';
+    verbHint.textContent='('+ex.verb+') — '+ex.pt;
+    sentDiv.appendChild(verbHint);
+
+    // sentence with blanks
+    const sentText=document.createElement('div');
+    sentText.style.cssText='font-size:18px;font-weight:700;color:var(--text);line-height:1.6;display:flex;flex-wrap:wrap;align-items:center;gap:6px';
+
+    // pronoun
+    const pron=document.createElement('span');
+    pron.textContent=ex.pronoun;
+    sentText.appendChild(pron);
+
+    // blank 1 (conjugated stem)
+    const bl1=document.createElement('span');
+    bl1.id='trb1_'+ex.id;
+    bl1.style.cssText='display:inline-block;min-width:70px;border-bottom:3px solid var(--blue);text-align:center;font-weight:900;color:var(--blue-d);padding:0 4px';
+    bl1.textContent=answered?ex.stem:'____';
+    sentText.appendChild(bl1);
+
+    const midSpan=document.createElement('span');
+    midSpan.textContent=ex.mid;
+    sentText.appendChild(midSpan);
+
+    // blank 2 (prefix)
+    const bl2=document.createElement('span');
+    bl2.id='trb2_'+ex.id;
+    bl2.style.cssText='display:inline-block;min-width:60px;border-bottom:3px solid var(--green);text-align:center;font-weight:900;color:var(--green-d);padding:0 4px';
+    bl2.textContent=answered?ex.prefix:'__';
+    sentText.appendChild(bl2);
+    sentText.appendChild(document.createTextNode('.'));
+
+    sentDiv.appendChild(sentText);
+    card.appendChild(sentDiv);
+
+    // ── Options ──
+    const optsDiv=document.createElement('div');
+    optsDiv.style.cssText='padding:12px 16px;display:flex;gap:10px';
+
+    // correct: stem ... prefix (trennbar)
+    const correctLabel = ex.stem+' ... '+ex.prefix;
+    // wrong: prefix+stem joined (untrennbar form)
+    const wrongStem = ex.prefix+ex.stem.charAt(0).toUpperCase()+ex.stem.slice(1);
+    // actually better wrong: the full verb wrong conjugation like "anmacht" (prefix stuck to front)
+    const wrongLabel = ex.prefix+ex.stem;
+
+    // shuffle which side correct goes
+    const coinflip = (ex.id.charCodeAt(1)%2)===0;
+    const opts = coinflip
+      ? [{label:correctLabel, correct:true}, {label:wrongLabel, correct:false}]
+      : [{label:wrongLabel, correct:false}, {label:correctLabel, correct:true}];
+
+    opts.forEach(opt=>{
+      const btn=document.createElement('button');
+      btn.style.cssText='flex:1;padding:14px 10px;border-radius:14px;border:2px solid var(--border-d);background:var(--bg);font-family:DM Mono,monospace;font-size:15px;font-weight:800;cursor:pointer;color:var(--text);transition:all .15s;min-height:52px;';
+      btn.textContent=opt.label;
+      if(answered){
+        btn.disabled=true;
+        if(opt.correct){
+          btn.style.background='var(--green-bg)';
+          btn.style.borderColor='var(--green)';
+          btn.style.color='var(--green-d)';
+        } else {
+          btn.style.opacity='.4';
+        }
+      } else {
+        btn.onclick=()=>pickTrennbar(ex.id, opt.correct);
+      }
+      optsDiv.appendChild(btn);
+    });
+    card.appendChild(optsDiv);
+
+    // feedback row (shown after answer)
+    const fb=document.createElement('div');
+    fb.id='trfb_'+ex.id;
+    if(answered){
+      fb.style.cssText='padding:6px 16px 14px;font-size:13px;font-weight:700;color:'+(answered==='correct'?'var(--green-d)':'var(--red-d)');
+      fb.textContent=answered==='correct'?'✓ Richtig! Praefix ans Ende.':'✗ Trennbar: '+ex.stem+' ... '+ex.prefix+'. Nicht: '+wrongLabel;
+    }
+    card.appendChild(fb);
+    scroll.appendChild(card);
+  });
+
+  // score if all answered
+  updateTrennbarScore();
+}
+
+function pickTrennbar(id, isCorrect){
+  if(trennbarAnswers[id])return;
+  const ex=TRENNBAR_EX.find(e=>e.id===id);if(!ex)return;
+  trennbarAnswers[id]=isCorrect?'correct':'wrong';
+
+  const card=document.getElementById('trex_'+id);
+  const optsDiv=card.querySelectorAll('button');
+  const wrongLabel=ex.prefix+ex.stem;
+
+  card.style.borderColor=isCorrect?'var(--green)':'var(--red)';
+
+  // fill blanks
+  const b1=document.getElementById('trb1_'+id);
+  const b2=document.getElementById('trb2_'+id);
+  if(b1)b1.textContent=ex.stem;
+  if(b2)b2.textContent=ex.prefix;
+
+  // style buttons
+  optsDiv.forEach(btn=>{
+    btn.disabled=true;
+    const correct = btn.textContent===ex.stem+' ... '+ex.prefix;
+    if(correct){
+      btn.style.background='var(--green-bg)';
+      btn.style.borderColor='var(--green)';
+      btn.style.color='var(--green-d)';
+    } else {
+      btn.style.opacity='.4';
+    }
+  });
+
+  // feedback
+  const fb=document.getElementById('trfb_'+id);
+  if(fb){
+    fb.style.cssText='padding:6px 16px 14px;font-size:13px;font-weight:700;color:'+(isCorrect?'var(--green-d)':'var(--red-d)');
+    fb.textContent=isCorrect?'✓ Richtig! Praefix ans Ende.':'✗ Trennbar: '+ex.stem+' ... '+ex.prefix+'. Nicht: '+wrongLabel;
+  }
+
+  updateTrennbarScore();
+}
+
+function updateTrennbarScore(){
+  const done=Object.keys(trennbarAnswers).length;
+  const total=TRENNBAR_EX.length;
+  const correct=Object.values(trennbarAnswers).filter(v=>v==='correct').length;
+  if(done===total){
+    const pct=Math.round(correct/total*100);
+    const msg=pct>=90?'🏆 Ausgezeichnet!':pct>=70?'👍 Gut gemacht!':'💪 Weiter üben!';
+    // Show score banner if not already there
+    const scroll=document.getElementById('trennbarScroll');
+    if(scroll&&!document.getElementById('trennbarBanner')){
+      const banner=document.createElement('div');
+      banner.id='trennbarBanner';
+      banner.style.cssText='margin:14px;padding:16px;border-radius:16px;background:var(--blue);color:white;text-align:center;font-size:15px;font-weight:800';
+      banner.innerHTML=msg+' '+correct+'/'+total+' richtig ('+pct+'%) <button onclick="resetTrennbar()" style="margin-left:12px;background:white;border:none;color:var(--blue-d);font-family:Nunito,sans-serif;font-size:13px;font-weight:800;cursor:pointer;padding:6px 14px;border-radius:10px">🔀 Neue Runde</button>';
+      scroll.appendChild(banner);
+      banner.scrollIntoView({behavior:'smooth',block:'center'});
+    }
+  }
+}
+
+function resetTrennbar(){
+  trennbarAnswers={};
+  const scroll=document.getElementById('trennbarScroll');
+  if(scroll)scroll.innerHTML='';
+  renderTrennbarEx();
+}
+
 
 P.sessions++;saveP();
 initDark();
