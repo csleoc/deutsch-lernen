@@ -874,6 +874,13 @@ body.dark .wq-item, body.dark .struct-item { background: var(--border) }
 }
 .undo-btn:not(:disabled):hover{border-color:var(--orange);color:var(--orange-d);background:var(--orange-bg)}
 .undo-btn:disabled{opacity:.35;cursor:default}
+
+.fc-example{
+  font-size:13px;font-weight:600;color:var(--text-soft);
+  font-style:italic;text-align:center;padding:8px 16px 2px;
+  line-height:1.5;min-height:20px;
+}
+.fc-example strong{color:var(--blue-d);font-style:normal;font-weight:800}
 </style>
 </head>
 <body>
@@ -1021,6 +1028,7 @@ body.dark .wq-item, body.dark .struct-item { background: var(--border) }
               <button class="fc-mark-btn" id="fcMarkBtn" onclick="toggleCardKnown()">☆</button>
             </div>
             <div class="fc-trans" id="fcBack"></div>
+            <div class="fc-example" id="fcExample"></div>
             <span class="fc-hint">← nicht gewusst · gewusst →</span>
           </div>
           <div class="fc-tint tw" id="fcTintWrong">✗</div>
@@ -1767,6 +1775,308 @@ const CATS = {
 
   "wohnen":{icon:"🏠",label:"Casa & Vida",words:[["die Wohnung","o apartamento"],["das Haus","a casa"],["das Zimmer","o quarto"],["die Küche","a cozinha"],["das Bad","o banheiro"],["das Wohnzimmer","a sala de estar"],["das Schlafzimmer","o quarto de dormir"],["der Flur","o corredor"],["der Keller","a cave / o porão"],["der Dachboden","o sótão"],["der Balkon","a varanda"],["der Garten","o jardim"],["die Miete","o aluguel"],["der Vermieter","o senhorio"],["der Mieter","o inquilino"],["die Heizung","o aquecimento"],["der Strom","a eletricidade"],["das Wasser","a água"],["der Müll","o lixo"],["der Aufzug","o elevador"],["die Treppe","a escada"],["das Stockwerk","o andar"],["der Eingang","a entrada"],["das Schloss","a fechadura / o castelo"],["der Schlüssel","a chave"],["das Fenster","a janela"],["die Tür","a porta"],["die Wand","a parede"],["der Boden","o chão"],["die Decke","o teto / a cobertura"],["das Möbel","o móvel"],["der Tisch","a mesa"],["der Stuhl","a cadeira"],["das Sofa","o sofá"],["das Bett","a cama"],["der Schrank","o armário"],["das Regal","a prateleira"],["die Lampe","a lâmpada"],["der Spiegel","o espelho"],["der Teppich","o tapete"],["das Kissen","a almofada"],["die Decke","a manta"],["die Spülmaschine","a máquina de lavar louça"],["die Waschmaschine","a máquina de lavar roupa"],["der Kühlschrank","o frigorífico"],["der Herd","o fogão"],["der Ofen","o forno"],["der Staubsauger","o aspirador"],["aufräumen","arrumar"],["putzen","limpar"],["renovieren","renovar"]]}
 };
+
+
+// ════════════════════════════════════════════
+// EXAMPLE SENTENCES
+// ════════════════════════════════════════════
+const EXAMPLES = {
+  // Essenciais
+  "ich":"Ich lerne Deutsch.",
+  "du":"Kannst du mir helfen?",
+  "er":"Er wohnt in Hamburg.",
+  "sie":"Sie spricht sehr gut Deutsch.",
+  "wir":"Wir gehen heute ins Kino.",
+  "ihr":"Habt ihr Zeit?",
+  "und":"Ich trinke Kaffee und Tee.",
+  "oder":"Möchtest du Tee oder Kaffee?",
+  "aber":"Ich mag Regen, aber nicht Schnee.",
+  "nicht":"Ich verstehe das nicht.",
+  "auch":"Ich lerne auch Spanisch.",
+  "sehr":"Das ist sehr schön.",
+  "gut":"Mir geht es gut, danke.",
+  "schlecht":"Das Wetter ist heute schlecht.",
+  "ja":"Ja, ich komme!",
+  "nein":"Nein, danke.",
+  "bitte":"Ein Kaffee, bitte.",
+  "danke":"Danke für deine Hilfe!",
+  "heute":"Heute ist Montag.",
+  "morgen":"Morgen fahre ich nach Berlin.",
+  "gestern":"Gestern war ich krank.",
+  "jetzt":"Jetzt lerne ich Deutsch.",
+  "hier":"Ich wohne hier seit zwei Jahren.",
+  "dort":"Das Café ist dort drüben.",
+  "immer":"Er kommt immer zu spät.",
+  "nie":"Ich esse nie Fleisch.",
+  "manchmal":"Manchmal gehe ich spazieren.",
+  "viel":"Ich trinke viel Wasser.",
+  "wenig":"Sie schläft zu wenig.",
+  "groß":"Hamburg ist eine große Stadt.",
+  "klein":"Das ist ein kleines Problem.",
+  "neu":"Ich habe ein neues Handy.",
+  "alt":"Das Haus ist sehr alt.",
+  "natürlich":"Natürlich helfe ich dir!",
+  "vielleicht":"Vielleicht komme ich morgen.",
+  "leider":"Leider habe ich keine Zeit.",
+  // Verben
+  "sein":"Er ist sehr nett.",
+  "haben":"Ich habe Hunger.",
+  "machen":"Was machst du heute?",
+  "gehen":"Ich gehe jeden Tag spazieren.",
+  "kommen":"Sie kommt aus Brasilien.",
+  "sehen":"Ich sehe dich!",
+  "geben":"Kannst du mir das Buch geben?",
+  "nehmen":"Ich nehme den Zug.",
+  "sagen":"Was sagst du?",
+  "sprechen":"Er spricht vier Sprachen.",
+  "hören":"Ich höre gern Musik.",
+  "lesen":"Sie liest jeden Abend ein Buch.",
+  "schreiben":"Ich schreibe eine E-Mail.",
+  "denken":"Was denkst du darüber?",
+  "wissen":"Ich weiß es nicht.",
+  "kennen":"Kennst du Hamburg?",
+  "finden":"Ich finde das sehr interessant.",
+  "kaufen":"Ich kaufe frisches Brot.",
+  "arbeiten":"Sie arbeitet bei einer Firma.",
+  "lernen":"Ich lerne seit einem Jahr Deutsch.",
+  "verstehen":"Ich verstehe das nicht ganz.",
+  "fragen":"Darf ich dich etwas fragen?",
+  "essen":"Wir essen um 19 Uhr.",
+  "trinken":"Möchtest du etwas trinken?",
+  "schlafen":"Das Baby schläft schon.",
+  "aufstehen":"Ich stehe um 7 Uhr auf.",
+  "kochen":"Er kocht heute Abendessen.",
+  "fahren":"Ich fahre mit dem Zug.",
+  "laufen":"Sie läuft jeden Morgen.",
+  "bleiben":"Ich bleibe heute zu Hause.",
+  "wohnen":"Wir wohnen in Hamburg.",
+  "leben":"Er lebt seit drei Jahren hier.",
+  "helfen":"Kann ich dir helfen?",
+  "brauchen":"Ich brauche deine Hilfe.",
+  "warten":"Ich warte auf den Bus.",
+  "spielen":"Die Kinder spielen im Park.",
+  "vergessen":"Ich habe meinen Schlüssel vergessen.",
+  "verlieren":"Er hat sein Handy verloren.",
+  "treffen":"Wir treffen uns um 18 Uhr.",
+  "bringen":"Kannst du das Buch mitbringen?",
+  "anrufen":"Ich rufe dich morgen an.",
+  "schicken":"Ich schicke dir eine Nachricht.",
+  "versuchen":"Ich versuche, pünktlich zu sein.",
+  "funktionieren":"Das WLAN funktioniert nicht.",
+  "benutzen":"Ich benutze die U-Bahn.",
+  "empfehlen":"Kannst du ein Restaurant empfehlen?",
+  "aussehen":"Du siehst heute müde aus.",
+  "einsteigen":"Wir steigen hier ein.",
+  "aussteigen":"Ich steige am Hauptbahnhof aus.",
+  "umsteigen":"Muss ich umsteigen?",
+  // Substantive
+  "die Zeit":"Ich habe keine Zeit.",
+  "der Tag":"Guten Tag! Wie geht es Ihnen?",
+  "das Jahr":"Ich lerne seit einem Jahr Deutsch.",
+  "die Woche":"Diese Woche bin ich sehr beschäftigt.",
+  "der Monat":"Im nächsten Monat fahre ich in Urlaub.",
+  "das Leben":"Das Leben in Hamburg gefällt mir.",
+  "die Welt":"Sie hat die halbe Welt bereist.",
+  "die Stadt":"Hamburg ist eine schöne Stadt.",
+  "der Mensch":"Jeder Mensch macht Fehler.",
+  "die Person":"Eine fremde Person hat mir geholfen.",
+  "der Mann":"Der Mann wartet an der Haltestelle.",
+  "die Frau":"Die Frau spricht sehr gut Deutsch.",
+  "das Kind":"Das Kind spielt im Garten.",
+  "die Frage":"Darf ich eine Frage stellen?",
+  "die Antwort":"Ich kenne die Antwort nicht.",
+  "das Problem":"Das ist kein großes Problem.",
+  "das Geld":"Ich habe kein Geld dabei.",
+  "die Arbeit":"Die Arbeit macht mir Spaß.",
+  "das Haus":"Das Haus hat einen großen Garten.",
+  "die Wohnung":"Die Wohnung ist sehr hell.",
+  "das Zimmer":"Mein Zimmer ist klein aber gemütlich.",
+  "die Küche":"Ich koche gern in der Küche.",
+  "die Schule":"Er geht noch zur Schule.",
+  "der Lehrer":"Der Lehrer erklärt die Grammatik.",
+  "das Auto":"Mein Auto ist kaputt.",
+  "der Bus":"Der Bus kommt in fünf Minuten.",
+  "die U-Bahn":"Ich fahre mit der U-Bahn zur Arbeit.",
+  "der Zug":"Der Zug hat Verspätung.",
+  "das Flugzeug":"Das Flugzeug landet um 15 Uhr.",
+  "der Bahnhof":"Wir treffen uns am Bahnhof.",
+  "das Wetter":"Das Wetter in Hamburg ist oft grau.",
+  "der Regen":"Ich mag den Regen nicht.",
+  "der Name":"Wie ist Ihr Name?",
+  "das Telefon":"Mein Telefon klingelt nicht.",
+  "das Handy":"Ich habe mein Handy vergessen.",
+  "die Sprache":"Deutsch ist eine schöne Sprache.",
+  "das Wort":"Ich kenne dieses Wort nicht.",
+  "das Buch":"Ich lese ein interessantes Buch.",
+  "der Computer":"Mein Computer ist sehr langsam.",
+  "der Arzt":"Ich muss zum Arzt gehen.",
+  "das Krankenhaus":"Er liegt im Krankenhaus.",
+  "die Musik":"Ich höre gern Musik.",
+  "der Film":"Der Film war sehr gut.",
+  "das Spiel":"Das Spiel hat lange gedauert.",
+  "das Restaurant":"Das Restaurant ist immer voll.",
+  // Adjetivos
+  "schön":"Hamburg hat viele schöne Ecken.",
+  "schnell":"Bitte sprich nicht so schnell!",
+  "langsam":"Kannst du etwas langsamer sprechen?",
+  "früh":"Ich muss morgen früh aufstehen.",
+  "spät":"Der Zug kommt zu spät.",
+  "warm":"Heute ist es sehr warm.",
+  "kalt":"Im Winter ist es in Hamburg kalt.",
+  "einfach":"Das ist nicht so einfach.",
+  "schwer":"Deutsch ist manchmal schwer.",
+  "möglich":"Ist das möglich?",
+  "wichtig":"Das ist sehr wichtig.",
+  "interessant":"Das Buch ist sehr interessant.",
+  "richtig":"Das ist die richtige Antwort.",
+  "falsch":"Das ist leider falsch.",
+  "glücklich":"Ich bin sehr glücklich hier.",
+  "müde":"Ich bin so müde.",
+  "krank":"Sie ist heute krank.",
+  "gesund":"Sport hält einen gesund.",
+  "leer":"Das Glas ist leer.",
+  "voll":"Der Bus ist total voll.",
+  "fertig":"Ich bin noch nicht fertig.",
+  "frei":"Bist du morgen Abend frei?",
+  "teuer":"Das Hotel ist sehr teuer.",
+  "billig":"Der Markt ist billig und frisch.",
+  "lecker":"Das Essen war wirklich lecker!",
+  "toll":"Das ist ja toll!",
+  // Comida
+  "das Brot":"Morgens esse ich Brot mit Butter.",
+  "das Brötchen":"Ich kaufe frische Brötchen beim Bäcker.",
+  "der Kaffee":"Ich trinke morgens immer Kaffee.",
+  "der Tee":"Ein Tee, bitte — mit Milch.",
+  "das Wasser":"Ich trinke viel Wasser.",
+  "die Milch":"Hast du Milch im Kühlschrank?",
+  "der Käse":"Der Käse aus der Schweiz ist sehr gut.",
+  "das Ei":"Ich esse zum Frühstück zwei Eier.",
+  "das Fleisch":"Er isst kein Fleisch.",
+  "der Fisch":"In Hamburg isst man viel Fisch.",
+  "die Kartoffel":"Deutsche essen sehr gern Kartoffeln.",
+  "die Tomate":"Die Tomaten vom Markt schmecken besser.",
+  "der Apfel":"Ein Apfel am Tag hält den Arzt fern.",
+  "die Suppe":"Im Winter esse ich gern Suppe.",
+  "das Bier":"In Bayern trinkt man viel Bier.",
+  "der Wein":"Möchtest du ein Glas Wein?",
+  "die Speisekarte":"Kann ich bitte die Speisekarte haben?",
+  "die Rechnung":"Zahlen bitte! Die Rechnung, bitte.",
+  "das Frühstück":"Das Frühstück ist von 7 bis 10 Uhr.",
+  "das Mittagessen":"Wir essen Mittagessen um 12 Uhr.",
+  "das Abendessen":"Das Abendessen ist fertig!",
+  // Transport
+  "das Ticket":"Ich habe kein Ticket gekauft.",
+  "die Fahrkarte":"Wo kaufe ich eine Fahrkarte?",
+  "der Fahrplan":"Ich schaue im Fahrplan nach.",
+  "die Abfahrt":"Die Abfahrt ist um 14:30 Uhr.",
+  "die Ankunft":"Die Ankunft verzögert sich.",
+  "die Verspätung":"Der Zug hat 20 Minuten Verspätung.",
+  "das Fahrrad":"Ich fahre mit dem Fahrrad zur Arbeit.",
+  "die Reise":"Die Reise nach Berlin dauert zwei Stunden.",
+  "der Stau":"Auf der Autobahn gibt es Stau.",
+  // Wohnen
+  "die Miete":"Die Miete in Hamburg ist sehr hoch.",
+  "der Schlüssel":"Ich habe meinen Schlüssel vergessen.",
+  "die Heizung":"Die Heizung funktioniert nicht.",
+  "putzen":"Ich putze jeden Samstag meine Wohnung.",
+  "aufräumen":"Räum bitte dein Zimmer auf!",
+  "der Kühlschrank":"Der Kühlschrank ist leer.",
+  "der Herd":"Pass auf, der Herd ist heiß.",
+  "das Sofa":"Ich sitze abends auf dem Sofa.",
+  "das Bett":"Das Bett ist sehr bequem.",
+  "die Waschmaschine":"Die Waschmaschine ist kaputt.",
+  // Gesundheit
+  "der Schmerz":"Ich habe Schmerzen im Rücken.",
+  "die Kopfschmerzen":"Ich habe starke Kopfschmerzen.",
+  "das Fieber":"Das Kind hat 39 Grad Fieber.",
+  "der Husten":"Ich habe seit einer Woche Husten.",
+  "die Erkältung":"Im Winter bekommt man leicht eine Erkältung.",
+  "das Medikament":"Der Arzt hat mir ein Medikament verschrieben.",
+  "das Rezept":"Ich brauche ein Rezept für dieses Medikament.",
+  "gesund":"Sport und gutes Essen halten einen gesund.",
+  "krank":"Sie ist krank und bleibt zu Hause.",
+  "schlafen":"Ich schlafe nur 6 Stunden pro Nacht.",
+  // Technologie
+  "das Internet":"Das Internet ist sehr langsam heute.",
+  "das Passwort":"Ich habe mein Passwort vergessen.",
+  "die App":"Diese App ist sehr nützlich.",
+  "laden":"Mein Handy muss ich laden.",
+  "der Bildschirm":"Der Bildschirm ist kaputt.",
+  "die E-Mail":"Ich schicke dir eine E-Mail.",
+  "die Nachricht":"Ich habe eine Nachricht bekommen.",
+  // Trennbare Verben
+  "anmachen":"Machst du bitte das Licht an?",
+  "ausmachen":"Mach bitte den Fernseher aus.",
+  "aufstehen":"Ich stehe jeden Tag um 6 Uhr auf.",
+  "einschlafen":"Das Baby schläft schnell ein.",
+  "aufwachen":"Ich wache immer früh auf.",
+  "anziehen":"Zieh eine Jacke an, es ist kalt!",
+  "ausziehen":"Er zieht seinen Mantel aus.",
+  "mitbringen":"Kannst du Brot mitbringen?",
+  "mitnehmen":"Nimm einen Regenschirm mit!",
+  "vorbereiten":"Ich bereite das Essen vor.",
+  "zurückkommen":"Wann kommst du zurück?",
+  "aufmachen":"Mach bitte das Fenster auf.",
+  "zumachen":"Mach die Tür zu, es zieht!",
+  "aussteigen":"Wir steigen am Hauptbahnhof aus.",
+  "einsteigen":"Steigen Sie bitte ein!",
+  "umsteigen":"Sie müssen in Hamburg umsteigen.",
+  "vorbereiten":"Er bereitet die Präsentation vor.",
+  "anrufen":"Ich rufe dich morgen an.",
+  "ausfüllen":"Bitte füllen Sie das Formular aus.",
+  "einladen":"Wir laden euch zur Party ein.",
+  // Untrennbare
+  "verstehen":"Ich verstehe dich nicht.",
+  "vergessen":"Ich habe deinen Geburtstag vergessen!",
+  "besuchen":"Ich besuche meine Familie am Wochenende.",
+  "erkennen":"Ich habe ihn sofort erkannt.",
+  "empfehlen":"Kannst du ein gutes Buch empfehlen?",
+  "entscheiden":"Wir müssen uns entscheiden.",
+  "erklären":"Kannst du das erklären?",
+  "bezahlen":"Ich möchte bitte bezahlen.",
+  "benutzen":"Ich benutze die U-Bahn.",
+  "entwickeln":"Die Firma entwickelt neue Software.",
+  "verbessern":"Ich möchte mein Deutsch verbessern.",
+  "beschreiben":"Kannst du das Problem beschreiben?",
+  // Expressen
+  "Entschuldigung!":"Entschuldigung, wo ist der Bahnhof?",
+  "bitte":"Einen Kaffee, bitte.",
+  "danke":"Vielen Dank für deine Hilfe!",
+  "Guten Morgen!":"Guten Morgen! Wie war dein Schlaf?",
+  "Guten Tag!":"Guten Tag! Was darf es sein?",
+  "Guten Abend!":"Guten Abend! Schön, Sie zu sehen.",
+  "Auf Wiedersehen!":"Auf Wiedersehen und gute Reise!",
+  "Tschüss!":"Tschüss! Bis morgen!",
+  "Wie geht es Ihnen?":"Wie geht es Ihnen? — Danke, gut.",
+  "Ich verstehe nicht.":"Ich verstehe nicht. Können Sie das wiederholen?",
+  "Was bedeutet...?":"Was bedeutet ‚Gemütlichkeit' auf Portugiesisch?",
+};
+
+function getExample(de){
+  // exact match
+  if(EXAMPLES[de])return EXAMPLES[de];
+  // lowercase match
+  const lo=de.toLowerCase();
+  if(EXAMPLES[lo])return EXAMPLES[lo];
+  // partial: find any key that is contained in de or vice versa
+  for(const [k,v] of Object.entries(EXAMPLES)){
+    if(de.includes(k)||k.includes(de))return v;
+  }
+  return null;
+}
+
+function highlightExample(sentence, de){
+  // bold the German word in the example sentence
+  const words = de.split(' ');
+  let result = sentence;
+  words.forEach(w=>{
+    if(w.length<3)return;
+    const re = new RegExp('('+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'[a-züöäß]*)', 'gi');
+    result = result.replace(re,'<strong>$1</strong>');
+  });
+  return result;
+}
+
 
 const ALL_CARDS = [];
 for(const [k,cat] of Object.entries(CATS)){
@@ -2558,6 +2868,13 @@ function renderFlip(){
   document.getElementById('fcHistF').innerHTML=histHTML(card.id);
   document.getElementById('fcFront').textContent=front;
   document.getElementById('fcBack').textContent=back;
+  // Show example sentence
+  const exDiv=document.getElementById('fcExample');
+  if(exDiv){
+    const ex=getExample(fcDir==='de'?card.de:card.pt);
+    if(ex){exDiv.innerHTML=highlightExample(ex,card.de);}
+    else exDiv.innerHTML='';
+  }
   document.getElementById('fcKnownBadge').className='fc-known-badge'+(isKnown(card.id)?' show':'');
   const mb=document.getElementById('fcMarkBtn');
   mb.textContent=isKnown(card.id)?'★':'☆';
